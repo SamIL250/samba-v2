@@ -47,6 +47,8 @@ export default function MomentsPage() {
         <EmptyState
           title="No moments yet"
           body="Capture a tiny chapter — a meal, a laugh, a walk. You two will thank yourselves later."
+          illustration="/brand/moments/moments-empty.png"
+          illustrationAlt=""
           action={
             <Link href="/moments/new" className="samba-btn">
               Create one
