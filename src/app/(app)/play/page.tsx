@@ -7,12 +7,6 @@ import { EmptyState } from "@/components/EmptyState";
 
 const GAMES = [
   {
-    href: "/play/wyr",
-    title: "Would You Rather",
-    body: "Answer in secret. Reveal together — match or marvel at the difference.",
-    tag: "Classic",
-  },
-  {
     href: "/play/truth-or-dare",
     title: "Truth or Dare",
     body: "Nudge them to pick Truth or Dare, then ask — pops up live.",

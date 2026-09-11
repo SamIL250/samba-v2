@@ -8,7 +8,6 @@ import { AppNav } from "./AppNav";
 import { AppBottomNav } from "./AppBottomNav";
 import { SoftSignalOverlay } from "./SoftSignalOverlay";
 import { TruthOrDareOverlay } from "./TruthOrDareOverlay";
-import { WyrOverlay } from "./WyrOverlay";
 import { themeCssVars, type ThemeKey } from "@/lib/theme";
 import { EnsureUser } from "./EnsureUser";
 
@@ -81,7 +80,9 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
       className="min-h-screen text-[color:var(--samba-ink)]"
       style={{
         ...vars,
-        background: isThread ? "#ffffff" : "var(--samba-gradient)",
+        background: isThread
+          ? "var(--samba-chat-chrome)"
+          : "var(--samba-gradient)",
       }}
     >
       {!isThread ? <AppNav coupleName={couple.couple.name} /> : null}
@@ -97,7 +98,6 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
       {!isThread ? <AppBottomNav /> : null}
       <SoftSignalOverlay />
       <TruthOrDareOverlay />
-      <WyrOverlay />
     </div>
   );
 }

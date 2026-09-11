@@ -214,3 +214,18 @@ export const markSeen = mutation({
     return { marked };
   },
 });
+
+export const remove = mutation({
+  args: {
+    signalId: v.id("softSignals"),
+  },
+  handler: async (ctx, args) => {
+    const { user } = await requireMyCouple(ctx);
+    const signal = await ctx.db.get(args.signalId);
+    if (!signal || signal.toUserId !== user._id) {
+      throw new Error("Signal not found");
+    }
+    await ctx.db.delete(args.signalId);
+    return { ok: true };
+  },
+});

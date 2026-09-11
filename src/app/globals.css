@@ -9,6 +9,10 @@
   --samba-border: #e4e1db;
   --samba-border-strong: #d4d0c8;
   --samba-muted: #6b6560;
+  --samba-bubble-in: #f3f1ec;
+  --samba-bubble-out: #1a1714;
+  --samba-bubble-out-text: #fffdf7;
+  --samba-chat-chrome: #ffffff;
   --samba-gradient: linear-gradient(160deg, #fffdf7 0%, #faf6ee 45%, #f3efe6 100%);
   --background: #faf9f6;
   --foreground: #1a1714;
@@ -90,18 +94,18 @@ h3,
   justify-content: center;
   gap: 0.5rem;
   border-radius: 9999px;
-  border: 1px solid var(--samba-ink);
-  background: var(--samba-ink);
-  color: #fffdf7;
+  border: 1px solid var(--samba-bubble-out, var(--samba-ink));
+  background: var(--samba-bubble-out, var(--samba-ink));
+  color: var(--samba-bubble-out-text, #fffdf7);
   padding: 0.7rem 1.35rem;
   font-weight: 700;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .samba-btn:hover {
-  background: color-mix(in srgb, var(--samba-ink) 82%, var(--samba-accent));
-  border-color: color-mix(in srgb, var(--samba-ink) 82%, var(--samba-accent));
-  color: #fffdf7;
+  background: color-mix(in srgb, var(--samba-bubble-out, var(--samba-ink)) 82%, var(--samba-accent));
+  border-color: color-mix(in srgb, var(--samba-bubble-out, var(--samba-ink)) 82%, var(--samba-accent));
+  color: var(--samba-bubble-out-text, #fffdf7);
 }
 
 .samba-btn:disabled {

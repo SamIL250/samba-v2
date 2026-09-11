@@ -373,8 +373,8 @@ export default function ChatThreadPage() {
   }
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-white">
-      <header className="relative z-30 flex shrink-0 items-center gap-3 border-b border-[color:var(--samba-border)] bg-white px-3 py-2.5 sm:px-4">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-[color:var(--samba-chat-chrome)]">
+      <header className="relative z-30 flex shrink-0 items-center gap-3 border-b border-[color:var(--samba-border)] bg-[color:var(--samba-chat-chrome)] px-3 py-2.5 sm:px-4">
         <Link
           href="/chat"
           className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)]"
@@ -444,7 +444,7 @@ export default function ChatThreadPage() {
                       onClick={() => void onThemePick(key)}
                     >
                       <span
-                        className="block h-10 w-10 overflow-hidden rounded-full border-2"
+                        className="relative block h-10 w-10 overflow-hidden rounded-full border-2"
                         style={{
                           borderColor: selected ? t.accent : "transparent",
                           background: t.gradient,
@@ -453,11 +453,15 @@ export default function ChatThreadPage() {
                             : undefined,
                         }}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={t.preview}
-                          alt=""
-                          className="h-full w-full object-cover opacity-90"
+                        <span
+                          className="absolute bottom-0 left-0 right-0 h-1/2"
+                          style={{ background: t.bubbleOut }}
+                          aria-hidden
+                        />
+                        <span
+                          className="absolute right-1.5 top-1.5 h-3 w-3 rounded-full"
+                          style={{ background: t.accent }}
+                          aria-hidden
                         />
                       </span>
                       <span className="text-[10px] font-semibold text-[color:var(--samba-ink)]">
@@ -619,8 +623,8 @@ export default function ChatThreadPage() {
                           : "px-3 py-2"
                       } ${
                         mine
-                          ? "rounded-[1.15rem] rounded-br-md bg-[color:var(--samba-ink)] text-[#FFFDF7]"
-                          : "rounded-[1.15rem] rounded-bl-md bg-[#F3F1EC] text-[color:var(--samba-ink)]"
+                          ? "rounded-[1.15rem] rounded-br-md bg-[color:var(--samba-bubble-out)] text-[color:var(--samba-bubble-out-text)]"
+                          : "rounded-[1.15rem] rounded-bl-md bg-[color:var(--samba-bubble-in)] text-[color:var(--samba-ink)]"
                       }`}
                     >
                       {message.replyTo ? (
@@ -697,7 +701,7 @@ export default function ChatThreadPage() {
                               rel="noreferrer"
                               className={`inline-flex items-center gap-2 text-sm font-semibold underline-offset-2 hover:underline ${
                                 mine
-                                  ? "text-[#FFFDF7]"
+                                  ? "text-[color:var(--samba-bubble-out-text)]"
                                   : "text-[color:var(--samba-ink)]"
                               }`}
                             >
@@ -742,7 +746,7 @@ export default function ChatThreadPage() {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-[color:var(--samba-border)] bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="shrink-0 border-t border-[color:var(--samba-border)] bg-[color:var(--samba-chat-chrome)] pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="relative mx-auto w-full max-w-2xl px-2.5 pt-2 sm:px-4">
           {replyTo ? (
             <div className="mb-2 flex items-start gap-2 rounded-xl border border-[color:var(--samba-border)] bg-[color:var(--samba-surface)] px-3 py-2">

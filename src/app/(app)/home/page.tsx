@@ -129,7 +129,7 @@ export default function HomePage() {
           {
             href: "/play",
             title: "Play",
-            body: "Would You Rather, Truth or Dare — play together.",
+            body: "Truth or Dare and more — play together.",
           },
           {
             href: "/moments",

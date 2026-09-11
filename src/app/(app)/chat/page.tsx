@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { MessageChatCircle } from "@untitledui/icons";
-import { api } from "@/lib/api";
+import { MessageChatCircle, XClose } from "@untitledui/icons";
+import { api, type Id } from "@/lib/api";
 import { formatRelative } from "@/lib/theme";
 import { SOFT_SIGNALS, signalMeta, type SoftSignalKind } from "@/lib/signals";
 
@@ -12,7 +12,9 @@ export default function MessagesHubPage() {
   const inbox = useQuery(api.signals.inbox);
   const sendSignal = useMutation(api.signals.send);
   const markSeen = useMutation(api.signals.markSeen);
+  const removeSignal = useMutation(api.signals.remove);
   const [sending, setSending] = useState<SoftSignalKind | null>(null);
+  const [removingId, setRemovingId] = useState<Id<"softSignals"> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +38,18 @@ export default function MessagesHubPage() {
       setError(err instanceof Error ? err.message : "Couldn’t send that");
     } finally {
       setSending(null);
+    }
+  }
+
+  async function onRemove(signalId: Id<"softSignals">) {
+    setRemovingId(signalId);
+    setError(null);
+    try {
+      await removeSignal({ signalId });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn’t remove that");
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -178,6 +192,7 @@ export default function MessagesHubPage() {
             {inbox.received.map((signal) => {
               const meta = signalMeta(signal.kind);
               const fresh = signal.seenAt === undefined;
+              const removing = removingId === signal._id;
               return (
                 <li
                   key={signal._id}
@@ -204,6 +219,15 @@ export default function MessagesHubPage() {
                       {fresh ? " · new" : ""}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[color:var(--samba-muted)] transition hover:bg-[color:var(--samba-surface)] hover:text-[color:var(--samba-ink)] disabled:opacity-45"
+                    aria-label={`Remove ${signal.label}`}
+                    disabled={removing}
+                    onClick={() => void onRemove(signal._id)}
+                  >
+                    <XClose className="size-4" strokeWidth={2} />
+                  </button>
                 </li>
               );
             })}

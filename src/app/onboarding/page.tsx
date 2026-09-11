@@ -1,14 +1,13 @@
 "use client";
 
 import { FormEvent, startTransition, useEffect, useState } from "react";
-import Image from "next/image";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { EnsureUser } from "@/components/EnsureUser";
 import { SambaMark } from "@/components/SambaLogo";
 import { FieldKey, mapOnboardingError } from "@/lib/errors";
-import { THEMES, type ThemeKey } from "@/lib/theme";
+import { THEMES, themeCssVars, type ThemeKey } from "@/lib/theme";
 
 type FieldErrors = Partial<Record<FieldKey, string>>;
 
@@ -28,6 +27,7 @@ export default function OnboardingPage() {
   const [done, setDone] = useState(false);
 
   const shouldLeave = Boolean(me?.membership) || done;
+  const vars = themeCssVars(theme);
 
   useEffect(() => {
     if (!shouldLeave) return;
@@ -117,8 +117,11 @@ export default function OnboardingPage() {
   return (
     <EnsureUser>
       <div
-        className="flex min-h-screen items-center justify-center bg-white px-4 py-12"
-        style={{ color: "var(--samba-ink)" }}
+        className="flex min-h-screen items-center justify-center px-4 py-12 text-[color:var(--samba-ink)]"
+        style={{
+          ...vars,
+          background: "var(--samba-gradient)",
+        }}
       >
         <div className="w-full max-w-lg">
           <div className="mb-8">
@@ -199,7 +202,8 @@ export default function OnboardingPage() {
               <fieldset className="space-y-3">
                 <legend className="text-sm font-medium">Theme</legend>
                 <p className="text-sm text-[color:var(--samba-muted)]">
-                  Pick the mood for your shared space.
+                  Pick the mood for your shared space — same themes you can
+                  change later in chat.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {(Object.keys(THEMES) as ThemeKey[]).map((key) => {
@@ -216,16 +220,38 @@ export default function OnboardingPage() {
                           border: selected
                             ? `1.5px solid ${t.accent}`
                             : "1px solid var(--samba-border)",
-                          background: "#fff",
+                          background: t.chatChrome,
+                          boxShadow: selected
+                            ? `0 0 0 1px ${t.accent}`
+                            : undefined,
                         }}
                       >
-                        <div className="relative aspect-[4/3] w-full bg-[color:var(--samba-surface)]">
-                          <Image
-                            src={t.preview}
-                            alt={`${t.label} theme preview`}
-                            fill
-                            sizes="(max-width: 640px) 45vw, 220px"
-                            className="object-cover"
+                        <div
+                          className="relative flex aspect-[4/3] w-full flex-col justify-end gap-1.5 p-3"
+                          style={{ background: t.gradient }}
+                        >
+                          <span
+                            className="ml-auto max-w-[70%] rounded-2xl rounded-br-md px-2.5 py-1.5 text-[10px] font-semibold leading-tight"
+                            style={{
+                              background: t.bubbleOut,
+                              color: t.bubbleOutText,
+                            }}
+                          >
+                            Hey you
+                          </span>
+                          <span
+                            className="max-w-[65%] rounded-2xl rounded-bl-md px-2.5 py-1.5 text-[10px] font-semibold leading-tight"
+                            style={{
+                              background: t.bubbleIn,
+                              color: t.ink,
+                            }}
+                          >
+                            Hi love
+                          </span>
+                          <span
+                            className="absolute right-3 top-3 h-3 w-3 rounded-full"
+                            style={{ background: t.accent }}
+                            aria-hidden
                           />
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2.5">
