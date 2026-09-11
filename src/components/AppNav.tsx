@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/play", label: "Play" },
   { href: "/moments", label: "Moments" },
   { href: "/wall", label: "Wall" },
+  { href: "/couple", label: "Couple" },
 ] as const;
 
 export function AppNav({ coupleName }: { coupleName?: string }) {
@@ -28,7 +29,6 @@ export function AppNav({ coupleName }: { coupleName?: string }) {
           ) : null}
         </div>
 
-        {/* Desktop / tablet top links */}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {LINKS.map((link) => {
             const active =
@@ -39,7 +39,7 @@ export function AppNav({ coupleName }: { coupleName?: string }) {
                 href={link.href}
                 className={`rounded-full px-3 py-1.5 text-sm transition ${
                   active
-                    ? "border border-[color:var(--samba-ink)] bg-[color:var(--samba-ink)] font-semibold text-[#FFFDF7]"
+                    ? "border border-[color:var(--samba-bubble-out)] bg-[color:var(--samba-bubble-out)] font-semibold text-[color:var(--samba-bubble-out-text)]"
                     : "border border-transparent text-[color:var(--samba-muted)] hover:border-[color:var(--samba-border)] hover:text-[color:var(--samba-ink)]"
                 }`}
               >

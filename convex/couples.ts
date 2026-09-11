@@ -282,11 +282,16 @@ export const updateProfile = mutation({
     theme: v.optional(themeValidator),
     chatBackground: v.optional(chatBackgroundValidator),
     partnerLabel: v.optional(v.string()),
+    displayName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { membership, couple } = await requireMyCouple(ctx);
+    const { user, membership, couple } = await requireMyCouple(ctx);
     const patch: Record<string, unknown> = {};
-    if (args.name !== undefined) patch.name = args.name.trim();
+    if (args.name !== undefined) {
+      const name = args.name.trim();
+      if (name.length < 2) throw new Error("Couple name is too short");
+      patch.name = name;
+    }
     if (args.anniversaryAt !== undefined) patch.anniversaryAt = args.anniversaryAt;
     if (args.theme !== undefined) patch.theme = args.theme;
     if (args.chatBackground !== undefined) {
@@ -296,9 +301,14 @@ export const updateProfile = mutation({
       await ctx.db.patch(couple._id, patch);
     }
     if (args.partnerLabel !== undefined) {
-      await ctx.db.patch(membership._id, {
-        partnerLabel: args.partnerLabel.trim(),
-      });
+      const partnerLabel = args.partnerLabel.trim();
+      if (!partnerLabel) throw new Error("Your label can’t be empty");
+      await ctx.db.patch(membership._id, { partnerLabel });
+    }
+    if (args.displayName !== undefined) {
+      const displayName = args.displayName.trim();
+      if (!displayName) throw new Error("Display name can’t be empty");
+      await ctx.db.patch(user._id, { displayName });
     }
   },
 });

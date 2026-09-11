@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
+  ArrowLeft,
   Bookmark,
   Heart,
   MessageCircle01,
@@ -387,13 +388,22 @@ export default function WallPage() {
   return (
     <>
       <div className="samba-fade-up mx-auto max-w-lg space-y-5 pb-4">
-        <div className="px-1 text-center sm:text-left">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--samba-accent)]">
-            Public wall
-          </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">
-            Other couples waving
-          </h1>
+        <div className="flex items-start gap-3 px-1">
+          <Link
+            href="/more"
+            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white/70 md:hidden"
+            aria-label="Back to more"
+          >
+            <ArrowLeft className="size-5" strokeWidth={2} />
+          </Link>
+          <div className="min-w-0 flex-1 text-center sm:text-left md:text-left">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--samba-accent)]">
+              Public wall
+            </p>
+            <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">
+              Other couples waving
+            </h1>
+          </div>
         </div>
 
         <div className="space-y-6">

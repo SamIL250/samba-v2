@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "convex/react";
 import {
+  DotsHorizontal,
   Home01,
   Image01,
-  LayoutGrid01,
   MessageChatCircle,
   PuzzlePiece01,
 } from "@untitledui/icons";
@@ -19,12 +19,24 @@ const LINKS: {
   href: string;
   label: string;
   Icon: IconType;
+  match?: (pathname: string) => boolean;
 }[] = [
   { href: "/home", label: "Home", Icon: Home01 },
   { href: "/chat", label: "Chat", Icon: MessageChatCircle },
   { href: "/play", label: "Play", Icon: PuzzlePiece01 },
   { href: "/moments", label: "Moments", Icon: Image01 },
-  { href: "/wall", label: "Wall", Icon: LayoutGrid01 },
+  {
+    href: "/more",
+    label: "More",
+    Icon: DotsHorizontal,
+    match: (pathname) =>
+      pathname === "/more" ||
+      pathname.startsWith("/more/") ||
+      pathname === "/wall" ||
+      pathname.startsWith("/wall/") ||
+      pathname === "/couple" ||
+      pathname.startsWith("/couple/"),
+  },
 ];
 
 export function AppBottomNav() {
@@ -39,9 +51,10 @@ export function AppBottomNav() {
       aria-label="Primary"
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-between px-2 pt-2 pb-2">
-        {LINKS.map(({ href, label, Icon }) => {
-          const active =
-            pathname === href || pathname.startsWith(`${href}/`);
+        {LINKS.map(({ href, label, Icon, match }) => {
+          const active = match
+            ? match(pathname)
+            : pathname === href || pathname.startsWith(`${href}/`);
           const showBadge = href === "/chat" && signalBadge > 0;
           return (
             <li key={href} className="flex-1">
@@ -56,7 +69,7 @@ export function AppBottomNav() {
                 <span
                   className={`relative flex h-9 w-9 items-center justify-center rounded-full ${
                     active
-                      ? "bg-[color:var(--samba-ink)] text-[#FFFDF7]"
+                      ? "bg-[color:var(--samba-bubble-out)] text-[color:var(--samba-bubble-out-text)]"
                       : "bg-transparent"
                   }`}
                 >
