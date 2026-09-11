@@ -346,5 +346,22 @@ h3,
   animation: samba-attach-in 0.22s ease-out both;
 }
 
+@keyframes samba-install-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scaleX(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.samba-install-pulse {
+  transform-origin: left center;
+  animation: samba-install-pulse 1.1s ease-in-out infinite;
+}
+
 
 

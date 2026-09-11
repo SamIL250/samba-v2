@@ -8,7 +8,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "SAMBA",
     description:
       "A private space for two: chat, play, share moments, and optionally open a window to the world.",
-    start_url: "/home?source=pwa",
+    // Must be a public URL that returns 200 without auth — /home 404s when signed out
+    // and that breaks / hangs Android WebAPK install.
+    start_url: "/?source=pwa",
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "fullscreen", "minimal-ui"],
