@@ -33,6 +33,11 @@ export const softSignalKindValidator = v.union(
   v.literal("proud"),
 );
 
+export const wallCheerKindValidator = v.union(
+  v.literal("wave"),
+  v.literal("bloom"),
+);
+
 export const todKindValidator = v.union(v.literal("truth"), v.literal("dare"));
 
 export const todRoundStatusValidator = v.union(

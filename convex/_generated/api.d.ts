@@ -20,6 +20,7 @@ import type * as presence from "../presence.js";
 import type * as signals from "../signals.js";
 import type * as tod from "../tod.js";
 import type * as users from "../users.js";
+import type * as wall from "../wall.js";
 import type * as wyr from "../wyr.js";
 
 import type {
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   signals: typeof signals;
   tod: typeof tod;
   users: typeof users;
+  wall: typeof wall;
   wyr: typeof wyr;
 }>;
 

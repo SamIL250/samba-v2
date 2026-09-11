@@ -7,6 +7,7 @@ import {
   themeValidator,
   todKindValidator,
   todRoundStatusValidator,
+  wallCheerKindValidator,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -176,4 +177,40 @@ export default defineSchema({
     .index("by_to_user_createdAt", ["toUserId", "createdAt"])
     .index("by_couple_createdAt", ["coupleId", "createdAt"])
     .index("by_from_kind_createdAt", ["fromUserId", "kind", "createdAt"]),
+
+  wallLikes: defineTable({
+    momentId: v.id("moments"),
+    userId: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_moment", ["momentId"])
+    .index("by_moment_user", ["momentId", "userId"])
+    .index("by_user", ["userId"]),
+
+  wallComments: defineTable({
+    momentId: v.id("moments"),
+    userId: v.id("users"),
+    body: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_moment_createdAt", ["momentId", "createdAt"])
+    .index("by_user", ["userId"]),
+
+  wallBookmarks: defineTable({
+    momentId: v.id("moments"),
+    userId: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_moment", ["momentId"])
+    .index("by_moment_user", ["momentId", "userId"])
+    .index("by_user_createdAt", ["userId", "createdAt"]),
+
+  wallCheers: defineTable({
+    momentId: v.id("moments"),
+    userId: v.id("users"),
+    kind: wallCheerKindValidator,
+    createdAt: v.number(),
+  })
+    .index("by_moment_kind", ["momentId", "kind"])
+    .index("by_moment_user_kind", ["momentId", "userId", "kind"]),
 });
