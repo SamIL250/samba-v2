@@ -117,6 +117,12 @@ export function PushSettingsCard() {
                     ? "allowed — finishing setup…"
                     : "off"}
           </p>
+          <p className="mt-2 text-xs leading-relaxed text-[color:var(--samba-muted)]">
+            Tip: if you still see a yellow Chrome bar with the site URL, you have a
+            browser shortcut — remove that Home Screen icon, then use Chrome →{" "}
+            <span className="font-semibold">Install app</span>, and open SAMBA from
+            the new icon (standalone, no URL bar).
+          </p>
         </div>
       </div>
 

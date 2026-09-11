@@ -48,10 +48,15 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#E4B429",
+  themeColor: [
+    { media: "(display-mode: standalone)", color: "#FFFDF7" },
+    { media: "(display-mode: fullscreen)", color: "#FFFDF7" },
+    { color: "#FFFDF7" },
+  ],
   colorScheme: "light",
   /** Helps Chrome/Android resize layout when the soft keyboard opens */
   interactiveWidget: "resizes-content",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

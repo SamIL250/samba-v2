@@ -5,7 +5,9 @@ import { XClose } from "@untitledui/icons";
 import { SambaMark } from "@/components/SambaLogo";
 
 const STORAGE_KEY = "samba-install-dismissed-at";
+const BROWSER_HINT_KEY = "samba-browser-chrome-hint-at";
 const DISMISS_MS = 1000 * 60 * 60 * 24 * 14; // 14 days
+const HINT_DISMISS_MS = 1000 * 60 * 60 * 24 * 3; // 3 days
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -15,37 +17,58 @@ type BeforeInstallPromptEvent = Event & {
 function isStandaloneDisplay() {
   if (typeof window === "undefined") return true;
   const mq = window.matchMedia("(display-mode: standalone)").matches;
+  const fullscreen = window.matchMedia("(display-mode: fullscreen)").matches;
   const iosStandalone =
     "standalone" in navigator &&
     Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-  return mq || iosStandalone;
+  return mq || fullscreen || iosStandalone;
+}
+
+function isAndroidChrome() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /Android/i.test(ua) && /Chrome/i.test(ua) && !/EdgA|OPR|SamsungBrowser/i.test(ua);
 }
 
 function isIosSafari() {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
-  const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const iOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const webkit = /WebKit/.test(ua);
   const notChrome = !/CriOS|FxiOS|EdgiOS/.test(ua);
   return iOS && webkit && notChrome;
 }
 
-function wasDismissedRecently() {
+function wasDismissedRecently(key: string, ms: number) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return false;
     const at = Number(raw);
     if (!Number.isFinite(at)) return false;
-    return Date.now() - at < DISMISS_MS;
+    return Date.now() - at < ms;
   } catch {
     return false;
   }
 }
 
+function dismissFor(key: string) {
+  try {
+    localStorage.setItem(key, String(Date.now()));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Helps users get a real standalone install (no Chrome URL / close bar).
+ * That yellow bar means Android opened a browser shortcut / Custom Tab, not the WebAPK.
+ */
 export function InstallPrompt() {
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [iosHint, setIosHint] = useState(false);
+  const [mode, setMode] = useState<"install" | "ios" | "reinstall">("install");
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null,
   );
@@ -53,25 +76,37 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (isStandaloneDisplay()) return;
-    if (wasDismissedRecently()) return;
 
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
-      setIosHint(false);
-      setReady(true);
+      setMode("install");
+      if (!wasDismissedRecently(STORAGE_KEY, DISMISS_MS)) {
+        setReady(true);
+      }
     };
 
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
 
-    // iOS has no beforeinstallprompt — offer Add to Home Screen guidance.
     const timer = window.setTimeout(() => {
-      if (isStandaloneDisplay() || wasDismissedRecently()) return;
-      if (isIosSafari()) {
-        setIosHint(true);
+      if (isStandaloneDisplay()) return;
+
+      if (isIosSafari() && !wasDismissedRecently(STORAGE_KEY, DISMISS_MS)) {
+        setMode("ios");
+        setReady(true);
+        return;
+      }
+
+      // Android already on the site in Chrome with the URL chrome visible —
+      // guide a clean reinstall via Chrome's Install app (not "Add to Home screen").
+      if (
+        isAndroidChrome() &&
+        !wasDismissedRecently(BROWSER_HINT_KEY, HINT_DISMISS_MS)
+      ) {
+        setMode("reinstall");
         setReady(true);
       }
-    }, 1800);
+    }, 1600);
 
     return () => {
       window.clearTimeout(timer);
@@ -87,11 +122,8 @@ export function InstallPrompt() {
 
   function dismiss() {
     setVisible(false);
-    try {
-      localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    } catch {
-      // ignore
-    }
+    if (mode === "reinstall") dismissFor(BROWSER_HINT_KEY);
+    else dismissFor(STORAGE_KEY);
     window.setTimeout(() => setReady(false), 280);
   }
 
@@ -102,7 +134,10 @@ export function InstallPrompt() {
       await deferred.prompt();
       await deferred.userChoice;
       setDeferred(null);
-      dismiss();
+      dismissFor(STORAGE_KEY);
+      dismissFor(BROWSER_HINT_KEY);
+      setVisible(false);
+      window.setTimeout(() => setReady(false), 280);
     } catch {
       setBusy(false);
     } finally {
@@ -140,12 +175,14 @@ export function InstallPrompt() {
                 SAMBA
               </p>
               <p className="mt-0.5 text-sm text-[color:var(--samba-muted)]">
-                Your couple space, one tap away
+                {mode === "reinstall"
+                  ? "Hide the browser bar"
+                  : "Your couple space, one tap away"}
               </p>
             </div>
           </div>
 
-          {iosHint ? (
+          {mode === "ios" ? (
             <div className="mt-4 space-y-3">
               <p className="text-sm leading-relaxed text-[color:var(--samba-ink)]/80">
                 Install SAMBA on your Home Screen: tap{" "}
@@ -159,6 +196,43 @@ export function InstallPrompt() {
               >
                 Got it
               </button>
+            </div>
+          ) : mode === "reinstall" ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm leading-relaxed text-[color:var(--samba-ink)]/80">
+                That yellow bar means Chrome opened a shortcut, not the real app.
+                Long-press the Home Screen icon →{" "}
+                <span className="font-semibold">Remove</span>, then in Chrome open
+                SAMBA → menu → <span className="font-semibold">Install app</span>{" "}
+                (not “Add to Home screen”), and open it from the new icon.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="samba-btn-ghost flex-1"
+                  onClick={dismiss}
+                >
+                  Later
+                </button>
+                {deferred ? (
+                  <button
+                    type="button"
+                    className="samba-btn flex-1"
+                    disabled={busy}
+                    onClick={() => void onInstall()}
+                  >
+                    {busy ? "Opening…" : "Install app"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="samba-btn flex-1"
+                    onClick={dismiss}
+                  >
+                    Got it
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="mt-4 flex gap-2">
