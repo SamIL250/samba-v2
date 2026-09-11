@@ -78,6 +78,11 @@ export default defineSchema({
     /** @deprecated legacy Truth-or-Dare share ref */
     todRoundId: v.optional(v.string()),
     todPlayId: v.optional(v.id("todPlays")),
+    replyToId: v.optional(v.id("messages")),
+    /** Soft-delete for everyone (usually by the sender) */
+    deletedForEveryoneAt: v.optional(v.number()),
+    /** Per-user hide — “delete for me” */
+    deletedForUserIds: v.optional(v.array(v.id("users"))),
     createdAt: v.number(),
   }).index("by_conversation_createdAt", ["conversationId", "createdAt"]),
 

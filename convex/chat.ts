@@ -1,6 +1,41 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { Doc, Id } from "./_generated/dataModel";
+import { QueryCtx, MutationCtx } from "./_generated/server";
 import { requireCoupleMember, requireMyCouple } from "./lib/auth";
+
+type Ctx = QueryCtx | MutationCtx;
+
+function previewSnippet(message: Doc<"messages">): string {
+  if (message.deletedForEveryoneAt) return "Deleted message";
+  if (message.type === "image") return "Photo";
+  if (message.type === "audio") return "Voice note";
+  if (message.type === "file") return "File";
+  if (message.type === "game_share") return message.body ?? "Game share";
+  return (message.body ?? "Message").slice(0, 120);
+}
+
+async function enrichSender(
+  ctx: Ctx,
+  message: Doc<"messages">,
+) {
+  if (!message.senderId) return null;
+  const user = await ctx.db.get(message.senderId);
+  const membership = await ctx.db
+    .query("memberships")
+    .withIndex("by_couple_user", (q) =>
+      q.eq("coupleId", message.coupleId).eq("userId", message.senderId!),
+    )
+    .unique();
+  if (!user) return null;
+  return {
+    _id: user._id,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
+    partnerLabel: membership?.partnerLabel,
+    color: membership?.color,
+  };
+}
 
 export const getConversation = query({
   args: {},
@@ -27,7 +62,7 @@ export const listMessages = query({
   handler: async (ctx, args) => {
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return [];
-    await requireCoupleMember(ctx, conversation.coupleId);
+    const { user } = await requireCoupleMember(ctx, conversation.coupleId);
 
     const limit = Math.min(args.limit ?? 100, 200);
     const messages = await ctx.db
@@ -38,34 +73,75 @@ export const listMessages = query({
       .order("desc")
       .take(limit);
 
+    const visible = messages
+      .reverse()
+      .filter(
+        (message) =>
+          !(message.deletedForUserIds ?? []).includes(user._id),
+      );
+
     const enriched = await Promise.all(
-      messages.reverse().map(async (message) => {
+      visible.map(async (message) => {
+        const deletedForEveryone = Boolean(message.deletedForEveryoneAt);
         let media = null;
-        if (message.mediaId) {
+        if (!deletedForEveryone && message.mediaId) {
           media = await ctx.db.get(message.mediaId);
         }
-        let sender = null;
-        if (message.senderId) {
-          const user = await ctx.db.get(message.senderId);
-          const membership = await ctx.db
-            .query("memberships")
-            .withIndex("by_couple_user", (q) =>
-              q
-                .eq("coupleId", message.coupleId)
-                .eq("userId", message.senderId!),
-            )
-            .unique();
-          sender = user
-            ? {
-                _id: user._id,
-                displayName: user.displayName,
-                avatarUrl: user.avatarUrl,
-                partnerLabel: membership?.partnerLabel,
-                color: membership?.color,
-              }
-            : null;
+        const sender = await enrichSender(ctx, message);
+
+        let replyTo: {
+          _id: Id<"messages">;
+          preview: string;
+          senderName: string;
+          deleted: boolean;
+        } | null = null;
+
+        if (message.replyToId) {
+          const parent = await ctx.db.get(message.replyToId);
+          if (parent) {
+            const parentHidden = (parent.deletedForUserIds ?? []).includes(
+              user._id,
+            );
+            const parentSender = parent.senderId
+              ? await ctx.db.get(parent.senderId)
+              : null;
+            const parentMembership = parent.senderId
+              ? await ctx.db
+                  .query("memberships")
+                  .withIndex("by_couple_user", (q) =>
+                    q
+                      .eq("coupleId", parent.coupleId)
+                      .eq("userId", parent.senderId!),
+                  )
+                  .unique()
+              : null;
+            replyTo = {
+              _id: parent._id,
+              preview: parentHidden
+                ? "Message unavailable"
+                : previewSnippet(parent),
+              senderName:
+                parentMembership?.partnerLabel ??
+                parentSender?.displayName ??
+                "Partner",
+              deleted: Boolean(parent.deletedForEveryoneAt) || parentHidden,
+            };
+          }
         }
-        return { ...message, media, sender };
+
+        return {
+          ...message,
+          body: deletedForEveryone ? undefined : message.body,
+          mediaId: deletedForEveryone ? undefined : message.mediaId,
+          media,
+          sender,
+          replyTo,
+          deletedForEveryone,
+          canDeleteForEveryone:
+            !deletedForEveryone &&
+            message.senderId === user._id &&
+            message.type !== "system",
+        };
       }),
     );
 
@@ -77,6 +153,7 @@ export const sendText = mutation({
   args: {
     conversationId: v.id("conversations"),
     body: v.string(),
+    replyToId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
     const body = args.body.trim();
@@ -87,12 +164,20 @@ export const sendText = mutation({
     if (!conversation) throw new Error("Conversation not found");
     const { user } = await requireCoupleMember(ctx, conversation.coupleId);
 
+    if (args.replyToId) {
+      const parent = await ctx.db.get(args.replyToId);
+      if (!parent || parent.conversationId !== conversation._id) {
+        throw new Error("Reply target not found");
+      }
+    }
+
     return await ctx.db.insert("messages", {
       conversationId: conversation._id,
       coupleId: conversation.coupleId,
       senderId: user._id,
       type: "text",
       body,
+      replyToId: args.replyToId,
       createdAt: Date.now(),
     });
   },
@@ -103,6 +188,7 @@ export const sendImage = mutation({
     conversationId: v.id("conversations"),
     mediaId: v.id("mediaAssets"),
     caption: v.optional(v.string()),
+    replyToId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
     const conversation = await ctx.db.get(args.conversationId);
@@ -121,6 +207,7 @@ export const sendImage = mutation({
       type: "image",
       body: args.caption?.trim() || undefined,
       mediaId: media._id,
+      replyToId: args.replyToId,
       createdAt: Date.now(),
     });
   },
@@ -132,6 +219,7 @@ export const sendMedia = mutation({
     mediaId: v.id("mediaAssets"),
     kind: v.union(v.literal("image"), v.literal("audio"), v.literal("file")),
     caption: v.optional(v.string()),
+    replyToId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
     const conversation = await ctx.db.get(args.conversationId);
@@ -143,6 +231,13 @@ export const sendMedia = mutation({
       throw new Error("Invalid media");
     }
 
+    if (args.replyToId) {
+      const parent = await ctx.db.get(args.replyToId);
+      if (!parent || parent.conversationId !== conversation._id) {
+        throw new Error("Reply target not found");
+      }
+    }
+
     return await ctx.db.insert("messages", {
       conversationId: conversation._id,
       coupleId: conversation.coupleId,
@@ -150,7 +245,53 @@ export const sendMedia = mutation({
       type: args.kind,
       body: args.caption?.trim() || undefined,
       mediaId: media._id,
+      replyToId: args.replyToId,
       createdAt: Date.now(),
     });
+  },
+});
+
+export const deleteForMe = mutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+    const { user } = await requireCoupleMember(ctx, message.coupleId);
+
+    if (message.type === "system") {
+      throw new Error("System messages can’t be deleted");
+    }
+
+    const existing = message.deletedForUserIds ?? [];
+    if (existing.includes(user._id)) return { ok: true };
+
+    await ctx.db.patch(message._id, {
+      deletedForUserIds: [...existing, user._id],
+    });
+    return { ok: true };
+  },
+});
+
+export const deleteForEveryone = mutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+    const { user } = await requireCoupleMember(ctx, message.coupleId);
+
+    if (message.type === "system") {
+      throw new Error("System messages can’t be deleted");
+    }
+    if (message.senderId !== user._id) {
+      throw new Error("Only the sender can delete for everyone");
+    }
+    if (message.deletedForEveryoneAt) return { ok: true };
+
+    await ctx.db.patch(message._id, {
+      deletedForEveryoneAt: Date.now(),
+      body: undefined,
+      mediaId: undefined,
+    });
+    return { ok: true };
   },
 });

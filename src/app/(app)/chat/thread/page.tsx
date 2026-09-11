@@ -12,19 +12,28 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   Camera01,
+  CornerUpLeft,
+  DotsHorizontal,
   File04,
   Image01,
   Microphone01,
   Plus,
   Send01,
+  Trash01,
   XClose,
 } from "@untitledui/icons";
-import { api } from "@/lib/api";
+import { api, type Id } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { formatRelative } from "@/lib/theme";
 
 type MediaKind = "image" | "audio" | "file";
+
+type ReplyDraft = {
+  id: Id<"messages">;
+  preview: string;
+  senderName: string;
+};
 
 export default function ChatThreadPage() {
   const conversation = useQuery(api.chat.getConversation);
@@ -37,6 +46,8 @@ export default function ChatThreadPage() {
   );
   const sendText = useMutation(api.chat.sendText);
   const sendMedia = useMutation(api.chat.sendMedia);
+  const deleteForMe = useMutation(api.chat.deleteForMe);
+  const deleteForEveryone = useMutation(api.chat.deleteForEveryone);
   const confirmMedia = useMutation(api.media.confirm);
   const getSignature = useAction(api.mediaActions.createUploadSignature);
   const heartbeat = useMutation(api.presence.heartbeat);
@@ -48,6 +59,8 @@ export default function ChatThreadPage() {
   const [recording, setRecording] = useState(false);
   const [recordSecs, setRecordSecs] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<ReplyDraft | null>(null);
+  const [menuId, setMenuId] = useState<Id<"messages"> | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -58,6 +71,7 @@ export default function ChatThreadPage() {
   const chunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,6 +84,15 @@ export default function ChatThreadPage() {
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
+
+  useEffect(() => {
+    function onDocClick() {
+      setMenuId(null);
+    }
+    if (!menuId) return;
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [menuId]);
 
   const partnerTyping = couple?.presence.find(
     (p) =>
@@ -85,17 +108,69 @@ export default function ChatThreadPage() {
     inbox?.partner?.displayName ??
     "Your person";
 
+  function draftPreview(
+    message: NonNullable<typeof messages>[number],
+  ): string {
+    if (message.deletedForEveryone) return "Deleted message";
+    if (message.type === "image") return "Photo";
+    if (message.type === "audio") return "Voice note";
+    if (message.type === "file") return "File";
+    return (message.body ?? "Message").slice(0, 80);
+  }
+
+  function startReply(message: NonNullable<typeof messages>[number]) {
+    setMenuId(null);
+    setReplyTo({
+      id: message._id,
+      preview: draftPreview(message),
+      senderName:
+        message.senderId === me?.user._id
+          ? "You"
+          : (message.sender?.partnerLabel ??
+            message.sender?.displayName ??
+            "Partner"),
+    });
+    window.setTimeout(() => inputRef.current?.focus(), 50);
+  }
+
+  async function onDeleteForMe(messageId: Id<"messages">) {
+    setMenuId(null);
+    try {
+      await deleteForMe({ messageId });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn’t delete");
+    }
+  }
+
+  async function onDeleteForEveryone(messageId: Id<"messages">) {
+    setMenuId(null);
+    try {
+      await deleteForEveryone({ messageId });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn’t delete");
+    }
+  }
+
   async function onSend(e: FormEvent) {
     e.preventDefault();
     if (!conversation || !text.trim()) return;
     const body = text;
+    const replyToId = replyTo?.id;
     setText("");
+    setReplyTo(null);
     setError(null);
     try {
       await clearTyping({});
-      await sendText({ conversationId: conversation._id, body });
+      await sendText({
+        conversationId: conversation._id,
+        body,
+        replyToId,
+      });
     } catch (err) {
       setText(body);
+      if (replyToId) {
+        /* keep reply cleared; user can re-pick */
+      }
       setError(err instanceof Error ? err.message : "Failed to send");
     }
   }
@@ -115,6 +190,7 @@ export default function ChatThreadPage() {
     setUploading(true);
     setAttachOpen(false);
     setError(null);
+    const replyToId = replyTo?.id;
     try {
       const signature = await getSignature({ coupleId: couple.couple._id });
       const uploaded = await uploadToCloudinary(file, signature);
@@ -131,7 +207,9 @@ export default function ChatThreadPage() {
         conversationId: conversation._id,
         mediaId,
         kind,
+        replyToId,
       });
+      setReplyTo(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -308,11 +386,12 @@ export default function ChatThreadPage() {
 
               const accent = message.sender?.color ?? "var(--samba-accent)";
               const time = formatRelative(message.createdAt);
+              const menuOpen = menuId === message._id;
 
               return (
                 <div
                   key={message._id}
-                  className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}
+                  className={`group relative flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}
                 >
                   {!mine ? (
                     <span
@@ -322,96 +401,182 @@ export default function ChatThreadPage() {
                     />
                   ) : null}
 
-                  <div
-                    className={`relative max-w-[min(78%,24rem)] ${
-                      message.type === "image" && !message.body
-                        ? "overflow-hidden p-1"
-                        : "px-3 py-2"
-                    } ${
-                      mine
-                        ? "rounded-[1.15rem] rounded-br-md bg-[color:var(--samba-ink)] text-[#FFFDF7]"
-                        : "rounded-[1.15rem] rounded-bl-md bg-[#F3F1EC] text-[color:var(--samba-ink)]"
-                    }`}
-                  >
-                    {message.type === "image" && message.media ? (
-                      <div className="relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={message.media.secureUrl}
-                          alt=""
-                          className={`max-h-64 w-full object-cover ${
-                            message.body
-                              ? "mb-1.5 rounded-xl"
-                              : "rounded-[0.95rem]"
-                          }`}
-                        />
-                        {!message.body ? (
-                          <time
-                            dateTime={new Date(message.createdAt).toISOString()}
-                            className="absolute bottom-1.5 right-2 rounded-md bg-black/35 px-1.5 py-0.5 text-[10px] leading-none tabular-nums text-white/95"
+                  <div className={`relative max-w-[min(78%,24rem)]`}>
+                    <button
+                      type="button"
+                      className={`absolute top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 opacity-0 shadow-sm transition group-hover:opacity-100 focus:opacity-100 ${
+                        mine ? "-left-9" : "-right-9"
+                      } ${menuOpen ? "opacity-100" : ""}`}
+                      aria-label="Message actions"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuId(menuOpen ? null : message._id);
+                      }}
+                    >
+                      <DotsHorizontal className="size-4" strokeWidth={2} />
+                    </button>
+
+                    {menuOpen ? (
+                      <div
+                        className={`absolute z-20 min-w-[11rem] overflow-hidden rounded-xl border border-[color:var(--samba-border)] bg-white py-1 text-sm shadow-sm ${
+                          mine ? "right-0 top-9" : "left-0 top-9"
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {!message.deletedForEveryone ? (
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[color:var(--samba-surface)]"
+                            onClick={() => startReply(message)}
                           >
-                            {time}
-                          </time>
+                            <CornerUpLeft className="size-4" strokeWidth={1.75} />
+                            Reply
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[color:var(--samba-surface)]"
+                          onClick={() => void onDeleteForMe(message._id)}
+                        >
+                          <Trash01 className="size-4" strokeWidth={1.75} />
+                          Delete for me
+                        </button>
+                        {message.canDeleteForEveryone ? (
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[#B45309] hover:bg-[color:var(--samba-surface)]"
+                            onClick={() => void onDeleteForEveryone(message._id)}
+                          >
+                            <Trash01 className="size-4" strokeWidth={1.75} />
+                            Delete for everyone
+                          </button>
                         ) : null}
                       </div>
                     ) : null}
 
-                    {message.type === "audio" && message.media ? (
-                      <div className="min-w-[14rem]">
-                        <audio
-                          controls
-                          preload="metadata"
-                          src={message.media.secureUrl}
-                          className="w-full max-w-xs"
-                        />
-                        <time
-                          dateTime={new Date(message.createdAt).toISOString()}
-                          className={`mt-1 block text-right text-[10px] tabular-nums ${
-                            mine ? "text-white/55" : "text-[color:var(--samba-ink)]/40"
+                    <div
+                      className={`${
+                        message.type === "image" &&
+                        !message.body &&
+                        !message.deletedForEveryone
+                          ? "overflow-hidden p-1"
+                          : "px-3 py-2"
+                      } ${
+                        mine
+                          ? "rounded-[1.15rem] rounded-br-md bg-[color:var(--samba-ink)] text-[#FFFDF7]"
+                          : "rounded-[1.15rem] rounded-bl-md bg-[#F3F1EC] text-[color:var(--samba-ink)]"
+                      }`}
+                    >
+                      {message.replyTo ? (
+                        <div
+                          className={`mb-2 rounded-lg border-l-2 px-2 py-1.5 text-xs ${
+                            mine
+                              ? "border-[color:var(--samba-accent)] bg-white/10"
+                              : "border-[color:var(--samba-accent)] bg-black/5"
                           }`}
                         >
-                          {time}
-                        </time>
-                      </div>
-                    ) : null}
+                          <p
+                            className={`font-semibold ${mine ? "text-[color:var(--samba-accent)]" : "text-[color:var(--samba-accent)]"}`}
+                          >
+                            {message.replyTo.senderName}
+                          </p>
+                          <p
+                            className={`truncate ${mine ? "text-white/70" : "text-[color:var(--samba-muted)]"}`}
+                          >
+                            {message.replyTo.preview}
+                          </p>
+                        </div>
+                      ) : null}
 
-                    {message.type === "file" && message.media ? (
-                      <a
-                        href={message.media.secureUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`inline-flex items-center gap-2 text-sm font-semibold underline-offset-2 hover:underline ${
-                          mine ? "text-[#FFFDF7]" : "text-[color:var(--samba-ink)]"
-                        }`}
-                      >
-                        <File04 className="size-4 shrink-0" strokeWidth={1.75} />
-                        Open file
-                        <time
-                          dateTime={new Date(message.createdAt).toISOString()}
-                          className={`ml-2 text-[10px] font-normal no-underline tabular-nums ${
-                            mine ? "text-white/55" : "text-[color:var(--samba-ink)]/40"
+                      {message.deletedForEveryone ? (
+                        <p
+                          className={`pr-11 text-[15px] italic leading-snug ${
+                            mine ? "text-white/55" : "text-[color:var(--samba-ink)]/45"
                           }`}
                         >
-                          {time}
-                        </time>
-                      </a>
-                    ) : null}
-
-                    {message.body ? (
-                      <>
-                        <p className="whitespace-pre-wrap pr-11 text-[15px] leading-snug">
-                          {message.body}
+                          This message was deleted
                         </p>
+                      ) : (
+                        <>
+                          {message.type === "image" && message.media ? (
+                            <div className="relative">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={message.media.secureUrl}
+                                alt=""
+                                className={`max-h-64 w-full object-cover ${
+                                  message.body
+                                    ? "mb-1.5 rounded-xl"
+                                    : "rounded-[0.95rem]"
+                                }`}
+                              />
+                              {!message.body ? (
+                                <time
+                                  dateTime={new Date(
+                                    message.createdAt,
+                                  ).toISOString()}
+                                  className="absolute bottom-1.5 right-2 rounded-md bg-black/35 px-1.5 py-0.5 text-[10px] leading-none tabular-nums text-white/95"
+                                >
+                                  {time}
+                                </time>
+                              ) : null}
+                            </div>
+                          ) : null}
+
+                          {message.type === "audio" && message.media ? (
+                            <div className="min-w-[14rem]">
+                              <audio
+                                controls
+                                preload="metadata"
+                                src={message.media.secureUrl}
+                                className="w-full max-w-xs"
+                              />
+                            </div>
+                          ) : null}
+
+                          {message.type === "file" && message.media ? (
+                            <a
+                              href={message.media.secureUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`inline-flex items-center gap-2 text-sm font-semibold underline-offset-2 hover:underline ${
+                                mine
+                                  ? "text-[#FFFDF7]"
+                                  : "text-[color:var(--samba-ink)]"
+                              }`}
+                            >
+                              <File04
+                                className="size-4 shrink-0"
+                                strokeWidth={1.75}
+                              />
+                              Open file
+                            </a>
+                          ) : null}
+
+                          {message.body ? (
+                            <p className="whitespace-pre-wrap pr-11 text-[15px] leading-snug">
+                              {message.body}
+                            </p>
+                          ) : null}
+                        </>
+                      )}
+
+                      {(message.body ||
+                        message.deletedForEveryone ||
+                        message.type === "audio" ||
+                        message.type === "file") && (
                         <time
                           dateTime={new Date(message.createdAt).toISOString()}
-                          className={`absolute bottom-1.5 right-2.5 text-[10px] leading-none tabular-nums ${
-                            mine ? "text-white/55" : "text-[color:var(--samba-ink)]/40"
+                          className={`mt-1 block text-right text-[10px] leading-none tabular-nums ${
+                            mine
+                              ? "text-white/55"
+                              : "text-[color:var(--samba-ink)]/40"
                           }`}
                         >
                           {time}
                         </time>
-                      </>
-                    ) : null}
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -423,6 +588,31 @@ export default function ChatThreadPage() {
 
       <div className="shrink-0 border-t border-[color:var(--samba-border)] bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="relative mx-auto w-full max-w-2xl px-2.5 pt-2 sm:px-4">
+          {replyTo ? (
+            <div className="mb-2 flex items-start gap-2 rounded-xl border border-[color:var(--samba-border)] bg-[color:var(--samba-surface)] px-3 py-2">
+              <CornerUpLeft
+                className="mt-0.5 size-4 shrink-0 text-[color:var(--samba-accent)]"
+                strokeWidth={1.75}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-[color:var(--samba-accent)]">
+                  Replying to {replyTo.senderName}
+                </p>
+                <p className="truncate text-sm text-[color:var(--samba-muted)]">
+                  {replyTo.preview}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-full p-1 hover:bg-white"
+                aria-label="Cancel reply"
+                onClick={() => setReplyTo(null)}
+              >
+                <XClose className="size-4" strokeWidth={2} />
+              </button>
+            </div>
+          ) : null}
+
           {attachOpen ? (
             <div className="samba-attach-toolbar absolute bottom-full left-2.5 mb-2 flex gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-white p-2 sm:left-4">
               <button
@@ -531,10 +721,13 @@ export default function ChatThreadPage() {
               </button>
 
               <input
+                ref={inputRef}
                 className="samba-input"
                 value={text}
                 onChange={(e) => onTyping(e.target.value)}
-                placeholder="Write to your person…"
+                placeholder={
+                  replyTo ? "Write your reply…" : "Write to your person…"
+                }
                 aria-label="Message"
                 disabled={uploading}
               />
