@@ -15,3 +15,11 @@ export const themeValidator = v.union(
   v.literal("forest"),
   v.literal("midnight"),
 );
+
+export const softSignalKindValidator = v.union(
+  v.literal("hug"),
+  v.literal("miss_you"),
+  v.literal("thinking"),
+  v.literal("kiss"),
+  v.literal("proud"),
+);

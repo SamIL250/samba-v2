@@ -215,3 +215,84 @@ h3,
   }
 }
 
+/* Soft signal live overlay */
+@keyframes samba-signal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes samba-signal-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes samba-signal-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.88);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes samba-signal-pop-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.94);
+  }
+}
+
+@keyframes samba-signal-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.samba-signal-overlay {
+  background: color-mix(in srgb, var(--samba-ink) 28%, transparent);
+  pointer-events: none;
+}
+
+.samba-signal-overlay-in {
+  animation: samba-signal-fade-in 0.35s ease-out both;
+}
+
+.samba-signal-overlay-out {
+  animation: samba-signal-fade-out 0.4s ease-in both;
+}
+
+.samba-signal-card-in {
+  animation: samba-signal-pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.samba-signal-card-out {
+  animation: samba-signal-pop-out 0.38s ease-in both;
+}
+
+.samba-signal-art {
+  animation: samba-signal-float 2.4s ease-in-out infinite;
+}
+
+

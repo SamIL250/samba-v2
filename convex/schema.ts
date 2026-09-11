@@ -1,6 +1,10 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { moodValidator, themeValidator } from "./lib/validators";
+import {
+  moodValidator,
+  softSignalKindValidator,
+  themeValidator,
+} from "./lib/validators";
 
 export default defineSchema({
   users: defineTable({
@@ -128,4 +132,19 @@ export default defineSchema({
   })
     .index("by_couple", ["coupleId"])
     .index("by_couple_user", ["coupleId", "userId"]),
+
+  /** Soft taps one partner sends the other — hugs, miss-yous, etc. */
+  softSignals: defineTable({
+    coupleId: v.id("couples"),
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    kind: softSignalKindValidator,
+    createdAt: v.number(),
+    seenAt: v.optional(v.number()),
+    /** Set when the live overlay animation has been shown to the recipient */
+    presentedAt: v.optional(v.number()),
+  })
+    .index("by_to_user_createdAt", ["toUserId", "createdAt"])
+    .index("by_couple_createdAt", ["coupleId", "createdAt"])
+    .index("by_from_kind_createdAt", ["fromUserId", "kind", "createdAt"]),
 });

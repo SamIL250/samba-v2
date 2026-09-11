@@ -1,218 +1,215 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { MessageChatCircle } from "@untitledui/icons";
 import { api } from "@/lib/api";
-import { EmptyState } from "@/components/EmptyState";
-import { uploadToCloudinary } from "@/lib/cloudinary";
 import { formatRelative } from "@/lib/theme";
+import { SOFT_SIGNALS, signalMeta, type SoftSignalKind } from "@/lib/signals";
 
-export default function ChatPage() {
-  const conversation = useQuery(api.chat.getConversation);
-  const me = useQuery(api.users.me);
-  const couple = useQuery(api.couples.myCouple);
-  const messages = useQuery(
-    api.chat.listMessages,
-    conversation ? { conversationId: conversation._id } : "skip",
-  );
-  const sendText = useMutation(api.chat.sendText);
-  const sendImage = useMutation(api.chat.sendImage);
-  const confirmMedia = useMutation(api.media.confirm);
-  const getSignature = useAction(api.mediaActions.createUploadSignature);
-  const heartbeat = useMutation(api.presence.heartbeat);
-  const clearTyping = useMutation(api.presence.clearTyping);
-
-  const [text, setText] = useState("");
-  const [uploading, setUploading] = useState(false);
+export default function MessagesHubPage() {
+  const inbox = useQuery(api.signals.inbox);
+  const sendSignal = useMutation(api.signals.send);
+  const markSeen = useMutation(api.signals.markSeen);
+  const [sending, setSending] = useState<SoftSignalKind | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages?.length]);
+    if (!inbox?.unreadCount) return;
+    const id = window.setTimeout(() => {
+      void markSeen({});
+    }, 1800);
+    return () => window.clearTimeout(id);
+  }, [inbox?.unreadCount, markSeen]);
 
-  const partnerTyping = couple?.presence.find(
-    (p) =>
-      p.userId !== me?.user._id &&
-      p.typingInConversationId &&
-      conversation &&
-      p.typingInConversationId === conversation._id &&
-      Date.now() - p.lastSeenAt < 8_000,
-  );
-
-  async function onSend(e: FormEvent) {
-    e.preventDefault();
-    if (!conversation || !text.trim()) return;
-    const body = text;
-    setText("");
+  async function onSend(kind: SoftSignalKind) {
+    setSending(kind);
     setError(null);
     try {
-      await clearTyping({});
-      await sendText({ conversationId: conversation._id, body });
+      await sendSignal({ kind });
+      const label = signalMeta(kind).label;
+      setToast(`Sent ${label.toLowerCase()} — they’ll feel it.`);
+      window.setTimeout(() => setToast(null), 2800);
     } catch (err) {
-      setText(body);
-      setError(err instanceof Error ? err.message : "Failed to send");
-    }
-  }
-
-  function onTyping(value: string) {
-    setText(value);
-    if (!conversation) return;
-    void heartbeat({ typingInConversationId: conversation._id });
-    if (typingTimer.current) clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => {
-      void clearTyping({});
-    }, 2500);
-  }
-
-  async function onPickImage(file: File | null) {
-    if (!file || !conversation || !couple) return;
-    setUploading(true);
-    setError(null);
-    try {
-      const signature = await getSignature({ coupleId: couple.couple._id });
-      const uploaded = await uploadToCloudinary(file, signature);
-      const mediaId = await confirmMedia({
-        coupleId: couple.couple._id,
-        cloudinaryPublicId: uploaded.public_id,
-        resourceType: uploaded.resource_type,
-        width: uploaded.width,
-        height: uploaded.height,
-        format: uploaded.format,
-        secureUrl: uploaded.secure_url,
-      });
-      await sendImage({ conversationId: conversation._id, mediaId });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : "Couldn’t send that");
     } finally {
-      setUploading(false);
+      setSending(null);
     }
   }
 
-  if (conversation === undefined || messages === undefined) {
-    return <p className="animate-pulse text-sm opacity-60">Opening chat…</p>;
-  }
-
-  if (!conversation) {
+  if (inbox === undefined) {
     return (
-      <EmptyState
-        title="No chat yet"
-        body="Finish pairing with your person first — your private thread appears when the couple space exists."
-      />
+      <p className="animate-pulse text-sm opacity-60">Opening messages…</p>
     );
   }
 
+  if (!inbox) {
+    return (
+      <p className="text-sm opacity-60">
+        Pair up first — messages live in your couple space.
+      </p>
+    );
+  }
+
+  const partnerName =
+    inbox.partner?.partnerLabel ?? inbox.partner?.displayName ?? "Your person";
+  const firstName = partnerName.split(" ")[0] ?? partnerName;
+
   return (
-    <div className="samba-panel flex h-[calc(100vh-7.5rem)] flex-col">
-      <div className="border-b border-[color:var(--samba-border)] px-5 py-4">
-        <h1 className="font-[family-name:var(--font-display)] font-bold tracking-tight text-2xl">Chat</h1>
-        <p className="text-sm text-[color:var(--samba-ink)]/55">
-          Just the two of you
-          {partnerTyping ? " · typing…" : ""}
+    <div className="samba-fade-up mx-auto max-w-lg space-y-6">
+      <header>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--samba-accent)]">
+          Between you two
         </p>
-      </div>
+        <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">
+          Messages
+        </h1>
+        <p className="mt-1.5 text-sm text-[color:var(--samba-muted)]">
+          Your private thread — and little signals that land on their side.
+        </p>
+      </header>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {messages.length === 0 ? (
-          <EmptyState
-            title="Say something soft"
-            body="First messages feel big. A hello, a photo, a silly thought — all welcome."
+      {inbox.conversationId && inbox.partner ? (
+        <Link
+          href="/chat/thread"
+          className="flex items-center gap-3 rounded-[1.35rem] border border-[color:var(--samba-border)] bg-white px-4 py-3.5 transition hover:border-[color:var(--samba-accent)]"
+        >
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
+            style={{ background: inbox.partner.color }}
+          >
+            {inbox.partner.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={inbox.partner.avatarUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              partnerName[0]?.toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="truncate font-semibold">{partnerName}</p>
+              {inbox.lastMessage ? (
+                <time className="shrink-0 text-[11px] text-[color:var(--samba-muted)]">
+                  {formatRelative(inbox.lastMessage.createdAt)}
+                </time>
+              ) : null}
+            </div>
+            <p className="mt-0.5 truncate text-sm text-[color:var(--samba-muted)]">
+              {inbox.lastMessage
+                ? `${inbox.lastMessage.mine ? "You: " : ""}${inbox.lastMessage.body}`
+                : "Say something soft…"}
+            </p>
+          </div>
+          <MessageChatCircle
+            className="size-5 shrink-0 text-[color:var(--samba-muted)]"
+            strokeWidth={1.75}
           />
+        </Link>
+      ) : (
+        <div className="rounded-[1.35rem] border border-dashed border-[color:var(--samba-border)] bg-white/60 px-4 py-6 text-center text-sm text-[color:var(--samba-muted)]">
+          Invite your person — then your private chat appears here.
+        </div>
+      )}
+
+      <section className="rounded-[1.5rem] border border-[color:var(--samba-border)] bg-white px-4 py-5">
+        <div className="mb-4">
+          <h2 className="font-[family-name:var(--font-display)] text-lg font-bold tracking-tight">
+            Soft signals
+          </h2>
+          <p className="mt-1 text-sm text-[color:var(--samba-muted)]">
+            Tap one and it arrives on {firstName}’s screen — wherever they are.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2">
+          {SOFT_SIGNALS.map(({ kind, label, blurb, illustration }) => (
+            <button
+              key={kind}
+              type="button"
+              disabled={sending !== null || !inbox.partner}
+              onClick={() => void onSend(kind)}
+              className="group flex flex-col items-center gap-1.5 rounded-2xl px-1 py-2 transition enabled:hover:bg-[color:var(--samba-accent)]/15 disabled:opacity-50"
+              title={blurb}
+            >
+              <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[color:var(--samba-surface)] transition group-hover:bg-[color:var(--samba-accent)]/25">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={illustration}
+                  alt=""
+                  className={`h-10 w-10 object-contain ${sending === kind ? "animate-pulse" : ""}`}
+                />
+              </span>
+              <span className="text-[10px] font-semibold leading-tight tracking-tight">
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {toast ? (
+          <p className="mt-3 text-center text-sm text-[color:var(--samba-ink)]/70">
+            {toast}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="mt-3 text-center text-sm text-[#B45309]" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-[family-name:var(--font-display)] text-lg font-bold tracking-tight">
+          From {firstName}
+        </h2>
+        {inbox.received.length === 0 ? (
+          <p className="rounded-[1.25rem] bg-white/70 px-4 py-5 text-center text-sm text-[color:var(--samba-muted)]">
+            Nothing yet — when {firstName} sends a soft signal, it lands here
+            for you.
+          </p>
         ) : (
-          messages.map((message) => {
-            const mine = message.senderId === me?.user._id;
-            if (message.type === "system") {
+          <ul className="space-y-2">
+            {inbox.received.map((signal) => {
+              const meta = signalMeta(signal.kind);
+              const fresh = signal.seenAt === undefined;
               return (
-                <p
-                  key={message._id}
-                  className="mx-auto max-w-md text-center text-xs text-[color:var(--samba-ink)]/50"
-                >
-                  {message.body}
-                </p>
-              );
-            }
-
-            if (message.type === "game_share") {
-              return (
-                <div
-                  key={message._id}
-                  className="mx-auto max-w-md rounded-2xl bg-[color:var(--samba-accent)]/10 px-4 py-3 text-center text-sm"
-                >
-                  {message.body}
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={message._id}
-                className={`flex ${mine ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                    mine
-                      ? "rounded-br-md text-[color:var(--samba-ink)]"
-                      : "rounded-bl-md bg-white"
+                <li
+                  key={signal._id}
+                  className={`flex items-center gap-3 rounded-[1.15rem] border px-3.5 py-3 ${
+                    fresh
+                      ? "border-[color:var(--samba-accent)] bg-[color:var(--samba-accent)]/12"
+                      : "border-[color:var(--samba-border)] bg-white"
                   }`}
-                  style={
-                    mine
-                      ? { background: message.sender?.color ?? "var(--samba-accent)" }
-                      : { borderLeft: `3px solid ${message.sender?.color ?? "#ccc"}` }
-                  }
                 >
-                  {!mine && message.sender ? (
-                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wide opacity-70">
-                      {message.sender.partnerLabel ?? message.sender.displayName}
-                    </p>
-                  ) : null}
-                  {message.type === "image" && message.media ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[color:var(--samba-surface)]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={message.media.secureUrl}
+                      src={meta.illustration}
                       alt=""
-                      className="mb-1 max-h-64 rounded-xl object-cover"
+                      className="h-10 w-10 object-contain"
                     />
-                  ) : null}
-                  {message.body ? <p className="whitespace-pre-wrap text-sm">{message.body}</p> : null}
-                  <p
-                    className={`mt-1 text-[10px] ${mine ? "text-[color:var(--samba-ink)]/55" : "text-[color:var(--samba-ink)]/40"}`}
-                  >
-                    {formatRelative(message.createdAt)}
-                  </p>
-                </div>
-              </div>
-            );
-          })
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">
+                      {partnerName} sent {signal.label}
+                    </p>
+                    <p className="text-xs text-[color:var(--samba-muted)]">
+                      {formatRelative(signal.createdAt)}
+                      {fresh ? " · new" : ""}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
-        <div ref={bottomRef} />
-      </div>
-
-      <form
-        onSubmit={onSend}
-        className="flex items-end gap-2 border-t border-[color:var(--samba-border)] p-3"
-      >
-        <label className="samba-btn-ghost cursor-pointer px-3 py-3 text-sm">
-          {uploading ? "…" : "Photo"}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => void onPickImage(e.target.files?.[0] ?? null)}
-          />
-        </label>
-        <input
-          className="samba-input"
-          value={text}
-          onChange={(e) => onTyping(e.target.value)}
-          placeholder="Write to your person…"
-        />
-        <button className="samba-btn shrink-0" type="submit" disabled={!text.trim()}>
-          Send
-        </button>
-      </form>
-      {error ? <p className="px-4 pb-3 text-sm text-[#B45309]">{error}</p> : null}
+      </section>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
 import {
   Home01,
   Image01,
@@ -10,6 +11,7 @@ import {
   PuzzlePiece01,
 } from "@untitledui/icons";
 import type { ComponentType, SVGProps } from "react";
+import { api } from "@/lib/api";
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
@@ -27,6 +29,8 @@ const LINKS: {
 
 export function AppBottomNav() {
   const pathname = usePathname();
+  const inbox = useQuery(api.signals.inbox);
+  const signalBadge = inbox?.unreadCount ?? 0;
 
   return (
     <nav
@@ -38,6 +42,7 @@ export function AppBottomNav() {
         {LINKS.map(({ href, label, Icon }) => {
           const active =
             pathname === href || pathname.startsWith(`${href}/`);
+          const showBadge = href === "/chat" && signalBadge > 0;
           return (
             <li key={href} className="flex-1">
               <Link
@@ -49,7 +54,7 @@ export function AppBottomNav() {
                 }`}
               >
                 <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                  className={`relative flex h-9 w-9 items-center justify-center rounded-full ${
                     active
                       ? "bg-[color:var(--samba-accent)]"
                       : "bg-transparent"
@@ -59,6 +64,11 @@ export function AppBottomNav() {
                     className="size-5"
                     strokeWidth={active ? 2.25 : 1.75}
                   />
+                  {showBadge ? (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--samba-ink)] px-1 text-[9px] font-bold text-white">
+                      {signalBadge > 9 ? "9+" : signalBadge}
+                    </span>
+                  ) : null}
                 </span>
                 {label}
               </Link>

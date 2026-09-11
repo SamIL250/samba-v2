@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useConvexAuth } from "convex/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { startTransition, useEffect } from "react";
 import { api } from "@/lib/api";
 import { AppNav } from "./AppNav";
 import { AppBottomNav } from "./AppBottomNav";
+import { SoftSignalOverlay } from "./SoftSignalOverlay";
 import { themeCssVars, type ThemeKey } from "@/lib/theme";
 import { EnsureUser } from "./EnsureUser";
 
@@ -15,6 +16,9 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
   const couple = useQuery(api.couples.myCouple, isAuthenticated ? {} : "skip");
   const heartbeat = useMutation(api.presence.heartbeat);
   const router = useRouter();
+  const pathname = usePathname();
+  const isThread =
+    pathname === "/chat/thread" || pathname.startsWith("/chat/thread/");
 
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
@@ -75,12 +79,21 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
       className="min-h-screen text-[color:var(--samba-ink)]"
       style={{
         ...vars,
-        background: "var(--samba-gradient)",
+        background: isThread ? "#ffffff" : "var(--samba-gradient)",
       }}
     >
-      <AppNav coupleName={couple.couple.name} />
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-28 md:pb-24">{children}</main>
-      <AppBottomNav />
+      {!isThread ? <AppNav coupleName={couple.couple.name} /> : null}
+      <main
+        className={
+          isThread
+            ? "p-0"
+            : "mx-auto max-w-5xl px-4 py-6 pb-28 md:pb-24"
+        }
+      >
+        {children}
+      </main>
+      {!isThread ? <AppBottomNav /> : null}
+      <SoftSignalOverlay />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import type * as media from "../media.js";
 import type * as mediaActions from "../mediaActions.js";
 import type * as moments from "../moments.js";
 import type * as presence from "../presence.js";
+import type * as signals from "../signals.js";
 import type * as users from "../users.js";
 import type * as wyr from "../wyr.js";
 
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   mediaActions: typeof mediaActions;
   moments: typeof moments;
   presence: typeof presence;
+  signals: typeof signals;
   users: typeof users;
   wyr: typeof wyr;
 }>;
