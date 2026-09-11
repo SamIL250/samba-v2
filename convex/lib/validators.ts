@@ -33,6 +33,25 @@ export const softSignalKindValidator = v.union(
   v.literal("proud"),
 );
 
+export const partnerMoodValidator = v.union(
+  v.literal("happy"),
+  v.literal("chilling"),
+  v.literal("sad"),
+  v.literal("sleeping"),
+  v.literal("working"),
+  v.literal("sports"),
+  v.literal("intimate"),
+  v.literal("missing"),
+  v.literal("cooking"),
+  v.literal("cleaning"),
+  v.literal("studying"),
+);
+
+export const moodGenderValidator = v.union(
+  v.literal("female"),
+  v.literal("male"),
+);
+
 export const wallCheerKindValidator = v.union(
   v.literal("wave"),
   v.literal("bloom"),

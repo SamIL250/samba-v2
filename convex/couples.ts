@@ -6,7 +6,12 @@ import {
   requireUser,
 } from "./lib/auth";
 import { generateInviteCode, PARTNER_COLORS, slugify } from "./lib/codes";
-import { chatBackgroundValidator, themeValidator } from "./lib/validators";
+import {
+  chatBackgroundValidator,
+  moodGenderValidator,
+  partnerMoodValidator,
+  themeValidator,
+} from "./lib/validators";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -320,6 +325,30 @@ export const updateProfile = mutation({
       if (!displayName) throw new Error("Display name can’t be empty");
       await ctx.db.patch(user._id, { displayName });
     }
+  },
+});
+
+export const setCurrentMood = mutation({
+  args: {
+    mood: v.union(partnerMoodValidator, v.null()),
+    gender: v.optional(moodGenderValidator),
+  },
+  handler: async (ctx, args) => {
+    const { membership } = await requireMyCouple(ctx);
+    if (args.mood === null) {
+      await ctx.db.patch(membership._id, {
+        currentMood: undefined,
+        moodGender: undefined,
+        moodUpdatedAt: undefined,
+      });
+      return { ok: true };
+    }
+    await ctx.db.patch(membership._id, {
+      currentMood: args.mood,
+      moodGender: args.gender ?? "female",
+      moodUpdatedAt: Date.now(),
+    });
+    return { ok: true };
   },
 });
 

@@ -2,7 +2,9 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
   chatBackgroundValidator,
+  moodGenderValidator,
   moodValidator,
+  partnerMoodValidator,
   softSignalKindValidator,
   themeValidator,
   todKindValidator,
@@ -41,6 +43,9 @@ export default defineSchema({
     partnerLabel: v.string(),
     color: v.string(),
     birthDateAt: v.optional(v.number()),
+    currentMood: v.optional(partnerMoodValidator),
+    moodGender: v.optional(moodGenderValidator),
+    moodUpdatedAt: v.optional(v.number()),
     joinedAt: v.number(),
   })
     .index("by_user", ["userId"])
