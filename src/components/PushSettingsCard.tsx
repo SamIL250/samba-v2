@@ -15,6 +15,7 @@ export function PushSettingsCard() {
   const vapidPublicKey = useQuery(api.push.publicKey);
   const saveSubscription = useMutation(api.push.saveSubscription);
   const removeSubscription = useMutation(api.push.removeSubscription);
+  const sendTest = useMutation(api.push.sendTest);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +46,9 @@ export function PushSettingsCard() {
           "Permission blocked. Enable notifications for this site in your browser settings, then try again.",
         );
       }
-      await subscribeBrowserPush(publicKey, saveSubscription);
-      setMessage("Notifications are on.");
+      // Force a fresh subscription so VAPID key rotations don't leave a dead endpoint.
+      await subscribeBrowserPush(publicKey, saveSubscription, { forceNew: true });
+      setMessage("Notifications are on for this device.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t enable notifications");
     } finally {
@@ -70,6 +72,22 @@ export function PushSettingsCard() {
       setMessage("Notifications turned off on this device.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t turn off notifications");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onTest() {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await sendTest({});
+      setMessage(
+        `Test sent to ${result.devices} device${result.devices === 1 ? "" : "s"}. Leave SAMBA (home screen / another app), then wait a few seconds.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn’t send test");
     } finally {
       setBusy(false);
     }
@@ -123,16 +141,32 @@ export function PushSettingsCard() {
           {busy ? "Working…" : status?.subscribed ? "Refresh" : "Turn on"}
         </button>
         {status?.subscribed ? (
-          <button
-            type="button"
-            className="samba-btn-ghost"
-            disabled={busy}
-            onClick={() => void onDisable()}
-          >
-            Turn off
-          </button>
+          <>
+            <button
+              type="button"
+              className="samba-btn-ghost"
+              disabled={busy}
+              onClick={() => void onTest()}
+            >
+              Send test
+            </button>
+            <button
+              type="button"
+              className="samba-btn-ghost"
+              disabled={busy}
+              onClick={() => void onDisable()}
+            >
+              Turn off
+            </button>
+          </>
         ) : null}
       </div>
+
+      <p className="text-xs leading-relaxed text-[color:var(--samba-muted)]">
+        Tip: the big in-app soft-signal animation only works while SAMBA is open.
+        Background alerts are the system notification shade. On iPhone, install to
+        Home Screen. On Android, don’t force-stop Chrome / SAMBA in app info.
+      </p>
     </div>
   );
 }

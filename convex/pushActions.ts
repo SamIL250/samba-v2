@@ -39,6 +39,7 @@ export const sendToUser = internalAction({
       userId: args.userId,
     });
     if (subscriptions.length === 0) {
+      console.log("Push: no subscriptions for user", args.userId);
       return { sent: 0, skipped: false as const };
     }
 
@@ -61,7 +62,11 @@ export const sendToUser = internalAction({
             },
           },
           payload,
-          { TTL: 60 * 60 * 12 },
+          {
+            // High urgency helps Android deliver while Doze / battery saver is active.
+            TTL: 60 * 60 * 12,
+            urgency: "high",
+          },
         );
         sent += 1;
       } catch (err) {
@@ -69,17 +74,27 @@ export const sendToUser = internalAction({
           err && typeof err === "object" && "statusCode" in err
             ? Number((err as { statusCode?: number }).statusCode)
             : 0;
+        const body =
+          err && typeof err === "object" && "body" in err
+            ? String((err as { body?: string }).body ?? "")
+            : "";
         // Gone / expired subscription
         if (status === 404 || status === 410) {
           await ctx.runMutation(internal.push.deleteByEndpoint, {
             endpoint: sub.endpoint,
           });
+          console.warn("Push subscription expired, removed", status);
         } else {
-          console.error("Push failed", status || err);
+          console.error(
+            "Push failed",
+            status || "unknown",
+            body.slice(0, 200) || err,
+          );
         }
       }
     }
 
+    console.log(`Push sent ${sent}/${subscriptions.length} for`, args.tag ?? "samba");
     return { sent, skipped: false as const };
   },
 });

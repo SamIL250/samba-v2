@@ -98,7 +98,7 @@ export function PushNotifications() {
         setBusy(false);
         return;
       }
-      await subscribeBrowserPush(publicKey, saveSubscription);
+      await subscribeBrowserPush(publicKey, saveSubscription, { forceNew: true });
       setShowOptIn(false);
     } catch (err) {
       setError(

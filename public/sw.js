@@ -1,5 +1,5 @@
 /* Samba PWA service worker — installable shell + Web Push. */
-const SHELL_CACHE = "samba-shell-v2";
+const SHELL_CACHE = "samba-shell-v3";
 const PRECACHE = ["/", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -92,6 +92,8 @@ self.addEventListener("push", (event) => {
     }
   }
 
+  // Always show a system notification — required for userVisibleOnly subscriptions,
+  // and this is what delivers alerts when the app is backgrounded / closed.
   event.waitUntil(
     self.registration.showNotification(data.title || "SAMBA", {
       body: data.body,
@@ -99,6 +101,9 @@ self.addEventListener("push", (event) => {
       badge: "/icons/icon-192.png",
       tag: data.tag || "samba",
       renotify: true,
+      requireInteraction: true,
+      silent: false,
+      vibrate: [120, 60, 120],
       data: { url: data.url || "/" },
     }),
   );

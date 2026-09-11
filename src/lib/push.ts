@@ -26,9 +26,26 @@ export async function subscribeBrowserPush(
     auth: string;
     userAgent?: string;
   }) => Promise<unknown>,
+  options?: { forceNew?: boolean },
 ) {
   const registration = await navigator.serviceWorker.ready;
+  // Pull the latest SW so push handlers aren't stuck on an old cached script.
+  try {
+    await registration.update();
+  } catch {
+    // ignore — subscribe still works with the current worker
+  }
+
   let subscription = await registration.pushManager.getSubscription();
+  if (subscription && options?.forceNew) {
+    try {
+      await subscription.unsubscribe();
+    } catch {
+      // continue and attempt a fresh subscribe
+    }
+    subscription = null;
+  }
+
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,

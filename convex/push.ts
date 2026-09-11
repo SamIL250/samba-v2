@@ -1,6 +1,7 @@
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireUser } from "./lib/auth";
+import { schedulePush } from "./lib/notify";
 
 export const status = query({
   args: {},
@@ -111,5 +112,29 @@ export const deleteByEndpoint = internalMutation({
       .unique();
     if (existing) await ctx.db.delete(existing._id);
     return { ok: true as const };
+  },
+});
+
+/** Sends a system notification to the current user's devices (for debugging background push). */
+export const sendTest = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    const subs = await ctx.db
+      .query("pushSubscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    if (subs.length === 0) {
+      throw new Error(
+        "No push subscription on this account yet. Tap Turn on / Refresh first.",
+      );
+    }
+    await schedulePush(ctx, user._id, {
+      title: "SAMBA",
+      body: "Test ping — leave the app, then check your notification shade.",
+      url: "/couple",
+      tag: `samba-test-${Date.now()}`,
+    });
+    return { ok: true as const, devices: subs.length };
   },
 });
