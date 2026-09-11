@@ -4,6 +4,8 @@ import {
   moodValidator,
   softSignalKindValidator,
   themeValidator,
+  todKindValidator,
+  todRoundStatusValidator,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -71,6 +73,9 @@ export default defineSchema({
     body: v.optional(v.string()),
     mediaId: v.optional(v.id("mediaAssets")),
     gameRoundId: v.optional(v.id("gameRounds")),
+    /** @deprecated legacy Truth-or-Dare share ref */
+    todRoundId: v.optional(v.string()),
+    todPlayId: v.optional(v.id("todPlays")),
     createdAt: v.number(),
   }).index("by_conversation_createdAt", ["conversationId", "createdAt"]),
 
@@ -123,6 +128,21 @@ export default defineSchema({
     createdAt: v.number(),
     revealedAt: v.optional(v.number()),
   }).index("by_couple_createdAt", ["coupleId", "createdAt"]),
+
+  todPlays: defineTable({
+    coupleId: v.id("couples"),
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    kind: v.optional(todKindValidator),
+    promptText: v.optional(v.string()),
+    answerText: v.optional(v.string()),
+    status: todRoundStatusValidator,
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_couple_createdAt", ["coupleId", "createdAt"])
+    .index("by_to_user_createdAt", ["toUserId", "createdAt"])
+    .index("by_from_user_createdAt", ["fromUserId", "createdAt"]),
 
   presence: defineTable({
     coupleId: v.id("couples"),

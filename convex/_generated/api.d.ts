@@ -18,6 +18,7 @@ import type * as mediaActions from "../mediaActions.js";
 import type * as moments from "../moments.js";
 import type * as presence from "../presence.js";
 import type * as signals from "../signals.js";
+import type * as tod from "../tod.js";
 import type * as users from "../users.js";
 import type * as wyr from "../wyr.js";
 
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   moments: typeof moments;
   presence: typeof presence;
   signals: typeof signals;
+  tod: typeof tod;
   users: typeof users;
   wyr: typeof wyr;
 }>;

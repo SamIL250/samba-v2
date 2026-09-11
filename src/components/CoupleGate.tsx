@@ -7,6 +7,8 @@ import { api } from "@/lib/api";
 import { AppNav } from "./AppNav";
 import { AppBottomNav } from "./AppBottomNav";
 import { SoftSignalOverlay } from "./SoftSignalOverlay";
+import { TruthOrDareOverlay } from "./TruthOrDareOverlay";
+import { WyrOverlay } from "./WyrOverlay";
 import { themeCssVars, type ThemeKey } from "@/lib/theme";
 import { EnsureUser } from "./EnsureUser";
 
@@ -94,6 +96,8 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
       </main>
       {!isThread ? <AppBottomNav /> : null}
       <SoftSignalOverlay />
+      <TruthOrDareOverlay />
+      <WyrOverlay />
     </div>
   );
 }

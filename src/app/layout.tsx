@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Syne } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
@@ -20,6 +20,13 @@ export const metadata: Metadata = {
   title: "Samba — Your couple space",
   description:
     "A private space for two: chat, play, share moments, and optionally open a window to the world.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  /** Helps Chrome/Android resize layout when the soft keyboard opens */
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

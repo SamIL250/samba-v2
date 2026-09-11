@@ -8,6 +8,8 @@ import { signalMeta, type SoftSignalKind } from "@/lib/signals";
 type Phase = "enter" | "hold" | "exit" | "idle";
 
 export function SoftSignalOverlay() {
+  const gamePending = useQuery(api.tod.livePending);
+  const wyrPending = useQuery(api.wyr.livePending);
   const pending = useQuery(api.signals.livePending);
   const markPresented = useMutation(api.signals.markPresented);
   const [active, setActive] = useState<{
@@ -18,6 +20,7 @@ export function SoftSignalOverlay() {
   const handlingRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (gamePending || wyrPending) return;
     if (!pending) return;
     if (handlingRef.current === pending._id) return;
     if (active) return;
@@ -28,7 +31,7 @@ export function SoftSignalOverlay() {
       kind: pending.kind,
     });
     setPhase("enter");
-  }, [pending, active]);
+  }, [pending, active, gamePending, wyrPending]);
 
   useEffect(() => {
     if (!active || phase === "idle") return;
@@ -54,6 +57,7 @@ export function SoftSignalOverlay() {
     }
   }, [active, phase, markPresented]);
 
+  if (gamePending || wyrPending) return null;
   if (!active || phase === "idle") return null;
 
   const meta = signalMeta(active.kind);

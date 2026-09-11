@@ -133,6 +133,77 @@ export const getActiveRound = query({
   },
 });
 
+/** Open WYR round waiting for this user — for live overlay on any page */
+export const livePending = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+    try {
+      const { user, couple } = await requireMyCouple(ctx);
+      const rounds = await ctx.db
+        .query("gameRounds")
+        .withIndex("by_couple_createdAt", (q) => q.eq("coupleId", couple._id))
+        .order("desc")
+        .take(1);
+      const round = rounds[0];
+      if (!round || round.status !== "awaiting_answers") return null;
+      if (round.answers.some((a) => a.userId === user._id)) return null;
+
+      const prompt = await ctx.db.get(round.promptId);
+      if (!prompt) return null;
+
+      return {
+        roundId: round._id,
+        optionA: prompt.optionA,
+        optionB: prompt.optionB,
+        category: prompt.category,
+      };
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const history = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    try {
+      const { couple } = await requireMyCouple(ctx);
+      const limit = Math.min(args.limit ?? 20, 40);
+      const rounds = await ctx.db
+        .query("gameRounds")
+        .withIndex("by_couple_createdAt", (q) => q.eq("coupleId", couple._id))
+        .order("desc")
+        .take(limit);
+
+      return await Promise.all(
+        rounds
+          .filter((r) => r.status === "revealed")
+          .map(async (round) => {
+            const prompt = await ctx.db.get(round.promptId);
+            const matched =
+              round.answers.length === 2 &&
+              round.answers[0]!.choice === round.answers[1]!.choice;
+            return {
+              _id: round._id,
+              createdAt: round.createdAt,
+              revealedAt: round.revealedAt,
+              matched,
+              optionA: prompt?.optionA ?? "",
+              optionB: prompt?.optionB ?? "",
+              category: prompt?.category ?? "spark",
+            };
+          }),
+      );
+    } catch {
+      return [];
+    }
+  },
+});
+
 export const startRound = mutation({
   args: {},
   handler: async (ctx) => {

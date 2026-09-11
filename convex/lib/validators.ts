@@ -23,3 +23,13 @@ export const softSignalKindValidator = v.union(
   v.literal("kiss"),
   v.literal("proud"),
 );
+
+export const todKindValidator = v.union(v.literal("truth"), v.literal("dare"));
+
+export const todRoundStatusValidator = v.union(
+  v.literal("awaiting_pick"),
+  v.literal("awaiting_prompt"),
+  v.literal("awaiting_answer"),
+  v.literal("done"),
+  v.literal("skipped"),
+);
