@@ -45,6 +45,7 @@ export const partnerMoodValidator = v.union(
   v.literal("cooking"),
   v.literal("cleaning"),
   v.literal("studying"),
+  v.literal("sick"),
 );
 
 export const moodGenderValidator = v.union(

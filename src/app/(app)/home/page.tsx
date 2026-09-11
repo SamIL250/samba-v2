@@ -436,9 +436,8 @@ export default function HomePage() {
                           key={key}
                           type="button"
                           disabled={moodBusy}
-                          aria-label={mood.label}
                           onClick={() => void onPickMood(key)}
-                          className={`flex items-center justify-center rounded-2xl border px-2 py-3 transition ${
+                          className={`flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-3 text-center transition ${
                             selected
                               ? "border-[color:var(--samba-accent)] bg-[color:var(--samba-accent)]/10"
                               : "border-[color:var(--samba-border)] hover:border-[color:var(--samba-accent)]/50"
@@ -448,8 +447,11 @@ export default function HomePage() {
                           <img
                             src={mood.illustrations[moodTab]}
                             alt=""
-                            className="h-16 w-12 object-contain"
+                            className="h-14 w-11 object-contain"
                           />
+                          <span className="text-[11px] font-semibold leading-tight text-[color:var(--samba-ink)]">
+                            {mood.label}
+                          </span>
                         </button>
                       );
                     },

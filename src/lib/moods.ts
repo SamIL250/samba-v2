@@ -89,6 +89,14 @@ export const PARTNER_MOODS = {
       male: "/brand/moods/studying-male.png",
     },
   },
+  sick: {
+    label: "Sick",
+    blurb: "Under the weather",
+    illustrations: {
+      female: "/brand/moods/sick.png",
+      male: "/brand/moods/sick-male.png",
+    },
+  },
 } as const;
 
 export type PartnerMoodKey = keyof typeof PARTNER_MOODS;
