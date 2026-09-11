@@ -79,19 +79,19 @@ export const listPublic = query({
 
 export const create = mutation({
   args: {
-    caption: v.string(),
+    caption: v.optional(v.string()),
     mood: v.optional(moodValidator),
     mediaIds: v.array(v.id("mediaAssets")),
     visibility: v.union(v.literal("private"), v.literal("public")),
   },
   handler: async (ctx, args) => {
     const { user, couple } = await requireMyCouple(ctx);
-    const caption = args.caption.trim();
+    const caption = (args.caption ?? "").trim();
     if (!caption && args.mediaIds.length === 0) {
-      throw new Error("Add a caption or photo");
+      throw new Error("Add a photo, video, or caption");
     }
     if (args.mediaIds.length > 6) {
-      throw new Error("Too many photos");
+      throw new Error("Too many media items");
     }
 
     for (const mediaId of args.mediaIds) {
@@ -114,7 +114,6 @@ export const create = mutation({
     });
   },
 });
-
 export const setVisibility = mutation({
   args: {
     momentId: v.id("moments"),
