@@ -211,16 +211,17 @@ h3,
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(26, 23, 20, 0.2);
   padding: 0.7rem 1.35rem;
   font-weight: 600;
-  color: #ffffff;
-  background: transparent;
+  color: #fffdf7;
+  background: var(--samba-ink);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .samba-btn-ghost-on-oval:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--samba-ink) 88%, #000);
+  border-color: transparent;
 }
 
 /* Right-side oval: rises from the bottom, spans to ~30% from the left (~70% coverage) */
