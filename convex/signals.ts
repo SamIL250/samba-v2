@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireMyCouple } from "./lib/auth";
 import { softSignalKindValidator } from "./lib/validators";
+import { displayLabelFor, schedulePush } from "./lib/notify";
 
 /** Only surface live overlays for signals this fresh */
 const LIVE_WINDOW_MS = 10 * 60_000;
@@ -167,13 +168,23 @@ export const send = mutation({
       throw new Error("Your person isn't here yet.");
     }
 
-    return await ctx.db.insert("softSignals", {
+    const id = await ctx.db.insert("softSignals", {
       coupleId: couple._id,
       fromUserId: user._id,
       toUserId: partner.userId,
       kind: args.kind,
       createdAt: Date.now(),
     });
+
+    const fromName = await displayLabelFor(ctx, couple._id, user._id);
+    await schedulePush(ctx, partner.userId, {
+      title: "SAMBA",
+      body: `${fromName} sent you ${KIND_LABELS[args.kind]}`,
+      url: "/chat",
+      tag: `signal-${id}`,
+    });
+
+    return id;
   },
 });
 

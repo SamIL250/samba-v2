@@ -222,4 +222,15 @@ export default defineSchema({
   })
     .index("by_moment_kind", ["momentId", "kind"])
     .index("by_moment_user_kind", ["momentId", "userId", "kind"]),
+
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    userAgent: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
 });

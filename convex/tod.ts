@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { requireMyCouple } from "./lib/auth";
 import { todKindValidator } from "./lib/validators";
+import { schedulePush } from "./lib/notify";
 
 const OPEN_STATUSES = new Set([
   "awaiting_pick",
@@ -62,13 +63,23 @@ export const nudge = mutation({
     const partner = await partnerOf(ctx, couple._id, user._id);
     if (!partner) throw new Error("Your person isn't here yet");
 
-    return await ctx.db.insert("todPlays", {
+    const playId = await ctx.db.insert("todPlays", {
       coupleId: couple._id,
       fromUserId: user._id,
       toUserId: partner.userId,
       status: "awaiting_pick",
       createdAt: Date.now(),
     });
+
+    const fromName = await nameFor(ctx, couple._id, user._id);
+    await schedulePush(ctx, partner.userId, {
+      title: "Truth or Dare",
+      body: `${fromName} nudged you — pick Truth or Dare`,
+      url: "/play/truth-or-dare",
+      tag: `tod-${playId}`,
+    });
+
+    return playId;
   },
 });
 
@@ -95,6 +106,15 @@ export const pick = mutation({
       kind: args.kind,
       status: "awaiting_prompt",
     });
+
+    const pickerName = await nameFor(ctx, couple._id, user._id);
+    await schedulePush(ctx, play.fromUserId, {
+      title: "Truth or Dare",
+      body: `${pickerName} picked ${args.kind === "dare" ? "Dare" : "Truth"} — your turn to ask`,
+      url: "/play/truth-or-dare",
+      tag: `tod-${play._id}`,
+    });
+
     return { ok: true };
   },
 });
@@ -126,6 +146,16 @@ export const writePrompt = mutation({
       promptText: text,
       status: "awaiting_answer",
     });
+
+    const askerName = await nameFor(ctx, couple._id, user._id);
+    const kindLabel = play.kind === "dare" ? "Dare" : "Truth";
+    await schedulePush(ctx, play.toUserId, {
+      title: `${kindLabel} from ${askerName}`,
+      body: text.length > 100 ? `${text.slice(0, 100)}…` : text,
+      url: "/home",
+      tag: `tod-${play._id}`,
+    });
+
     return { ok: true };
   },
 });
@@ -162,6 +192,18 @@ export const answer = mutation({
       answerText: answerText || undefined,
       completedAt: Date.now(),
     });
+
+    const answererName = await nameFor(ctx, couple._id, user._id);
+    await schedulePush(ctx, play.fromUserId, {
+      title: "Truth or Dare",
+      body:
+        args.outcome === "done"
+          ? `${answererName} answered your ${play.kind === "dare" ? "dare" : "truth"}`
+          : `${answererName} skipped this round`,
+      url: "/play/truth-or-dare",
+      tag: `tod-${play._id}`,
+    });
+
     return { ok: true };
   },
 });

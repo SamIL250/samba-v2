@@ -3,6 +3,11 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { QueryCtx, MutationCtx } from "./_generated/server";
 import { requireCoupleMember, requireMyCouple } from "./lib/auth";
+import {
+  displayLabelFor,
+  partnerUserId,
+  schedulePush,
+} from "./lib/notify";
 
 type Ctx = QueryCtx | MutationCtx;
 
@@ -171,7 +176,7 @@ export const sendText = mutation({
       }
     }
 
-    return await ctx.db.insert("messages", {
+    const messageId = await ctx.db.insert("messages", {
       conversationId: conversation._id,
       coupleId: conversation.coupleId,
       senderId: user._id,
@@ -180,6 +185,20 @@ export const sendText = mutation({
       replyToId: args.replyToId,
       createdAt: Date.now(),
     });
+
+    const partnerId = await partnerUserId(ctx, conversation.coupleId, user._id);
+    if (partnerId) {
+      const fromName = await displayLabelFor(ctx, conversation.coupleId, user._id);
+      const preview = body.length > 80 ? `${body.slice(0, 80)}…` : body;
+      await schedulePush(ctx, partnerId, {
+        title: fromName,
+        body: preview,
+        url: "/chat/thread",
+        tag: `chat-${conversation._id}`,
+      });
+    }
+
+    return messageId;
   },
 });
 
@@ -200,7 +219,7 @@ export const sendImage = mutation({
       throw new Error("Invalid media");
     }
 
-    return await ctx.db.insert("messages", {
+    const messageId = await ctx.db.insert("messages", {
       conversationId: conversation._id,
       coupleId: conversation.coupleId,
       senderId: user._id,
@@ -210,6 +229,19 @@ export const sendImage = mutation({
       replyToId: args.replyToId,
       createdAt: Date.now(),
     });
+
+    const partnerId = await partnerUserId(ctx, conversation.coupleId, user._id);
+    if (partnerId) {
+      const fromName = await displayLabelFor(ctx, conversation.coupleId, user._id);
+      await schedulePush(ctx, partnerId, {
+        title: fromName,
+        body: args.caption?.trim() || "Sent a photo",
+        url: "/chat/thread",
+        tag: `chat-${conversation._id}`,
+      });
+    }
+
+    return messageId;
   },
 });
 
@@ -238,7 +270,7 @@ export const sendMedia = mutation({
       }
     }
 
-    return await ctx.db.insert("messages", {
+    const messageId = await ctx.db.insert("messages", {
       conversationId: conversation._id,
       coupleId: conversation.coupleId,
       senderId: user._id,
@@ -248,6 +280,25 @@ export const sendMedia = mutation({
       replyToId: args.replyToId,
       createdAt: Date.now(),
     });
+
+    const partnerId = await partnerUserId(ctx, conversation.coupleId, user._id);
+    if (partnerId) {
+      const fromName = await displayLabelFor(ctx, conversation.coupleId, user._id);
+      const kindLabel =
+        args.kind === "image"
+          ? "Sent a photo"
+          : args.kind === "audio"
+            ? "Sent a voice note"
+            : "Sent a file";
+      await schedulePush(ctx, partnerId, {
+        title: fromName,
+        body: args.caption?.trim() || kindLabel,
+        url: "/chat/thread",
+        tag: `chat-${conversation._id}`,
+      });
+    }
+
+    return messageId;
   },
 });
 

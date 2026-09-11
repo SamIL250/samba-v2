@@ -12,6 +12,12 @@ import {
   partnerMoodValidator,
   themeValidator,
 } from "./lib/validators";
+import {
+  displayLabelFor,
+  moodLabel,
+  partnerUserId,
+  schedulePush,
+} from "./lib/notify";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -334,7 +340,7 @@ export const setCurrentMood = mutation({
     gender: v.optional(moodGenderValidator),
   },
   handler: async (ctx, args) => {
-    const { membership } = await requireMyCouple(ctx);
+    const { user, membership, couple } = await requireMyCouple(ctx);
     if (args.mood === null) {
       await ctx.db.patch(membership._id, {
         currentMood: undefined,
@@ -348,6 +354,18 @@ export const setCurrentMood = mutation({
       moodGender: args.gender ?? "female",
       moodUpdatedAt: Date.now(),
     });
+
+    const partnerId = await partnerUserId(ctx, couple._id, user._id);
+    if (partnerId) {
+      const fromName = await displayLabelFor(ctx, couple._id, user._id);
+      await schedulePush(ctx, partnerId, {
+        title: "SAMBA",
+        body: `${fromName} is feeling ${moodLabel(args.mood).toLowerCase()}`,
+        url: "/home",
+        tag: `mood-${user._id}`,
+      });
+    }
+
     return { ok: true };
   },
 });

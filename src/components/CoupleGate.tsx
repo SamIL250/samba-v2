@@ -11,6 +11,7 @@ import { TruthOrDareOverlay } from "./TruthOrDareOverlay";
 import { themeCssVars, type ThemeKey } from "@/lib/theme";
 import { EnsureUser } from "./EnsureUser";
 import { AppShellSkeleton } from "@/components/skeletons";
+import { PushNotifications } from "@/components/PushNotifications";
 
 function CoupleShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
@@ -87,6 +88,7 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
       {!isThread ? <AppBottomNav /> : null}
       <SoftSignalOverlay />
       <TruthOrDareOverlay />
+      {!isThread ? <PushNotifications /> : null}
     </div>
   );
 }
