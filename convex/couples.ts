@@ -6,7 +6,7 @@ import {
   requireUser,
 } from "./lib/auth";
 import { generateInviteCode, PARTNER_COLORS, slugify } from "./lib/codes";
-import { themeValidator } from "./lib/validators";
+import { chatBackgroundValidator, themeValidator } from "./lib/validators";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -280,6 +280,7 @@ export const updateProfile = mutation({
     name: v.optional(v.string()),
     anniversaryAt: v.optional(v.number()),
     theme: v.optional(themeValidator),
+    chatBackground: v.optional(chatBackgroundValidator),
     partnerLabel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -288,6 +289,9 @@ export const updateProfile = mutation({
     if (args.name !== undefined) patch.name = args.name.trim();
     if (args.anniversaryAt !== undefined) patch.anniversaryAt = args.anniversaryAt;
     if (args.theme !== undefined) patch.theme = args.theme;
+    if (args.chatBackground !== undefined) {
+      patch.chatBackground = args.chatBackground;
+    }
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(couple._id, patch);
     }

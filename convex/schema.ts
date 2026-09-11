@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  chatBackgroundValidator,
   moodValidator,
   softSignalKindValidator,
   themeValidator,
@@ -22,6 +23,7 @@ export default defineSchema({
     createdBy: v.id("users"),
     anniversaryAt: v.optional(v.number()),
     theme: themeValidator,
+    chatBackground: v.optional(chatBackgroundValidator),
     status: v.union(v.literal("pending_partner"), v.literal("active")),
     createdAt: v.number(),
   })

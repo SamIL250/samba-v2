@@ -18,6 +18,7 @@ import {
   File04,
   Image01,
   Microphone01,
+  Palette,
   Plus,
   Send01,
   Trash01,
@@ -26,7 +27,13 @@ import {
 import { api, type Id } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { formatRelative } from "@/lib/theme";
+import {
+  CHAT_BACKGROUNDS,
+  chatBackgroundStyle,
+  isChatBackgroundKey,
+  type ChatBackgroundKey,
+} from "@/lib/chatBackgrounds";
+import { formatRelative, THEMES, type ThemeKey } from "@/lib/theme";
 
 type MediaKind = "image" | "audio" | "file";
 
@@ -55,6 +62,7 @@ export default function ChatThreadPage() {
   const getSignature = useAction(api.mediaActions.createUploadSignature);
   const heartbeat = useMutation(api.presence.heartbeat);
   const clearTyping = useMutation(api.presence.clearTyping);
+  const updateProfile = useMutation(api.couples.updateProfile);
 
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -64,6 +72,7 @@ export default function ChatThreadPage() {
   const [error, setError] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<ReplyDraft | null>(null);
   const [menuId, setMenuId] = useState<Id<"messages"> | null>(null);
+  const [appearOpen, setAppearOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,11 +110,12 @@ export default function ChatThreadPage() {
   useEffect(() => {
     function onDocClick() {
       setMenuId(null);
+      setAppearOpen(false);
     }
-    if (!menuId) return;
+    if (!menuId && !appearOpen) return;
     document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
-  }, [menuId]);
+  }, [menuId, appearOpen]);
 
   const partnerTyping = couple?.presence.find(
     (p) =>
@@ -120,6 +130,30 @@ export default function ChatThreadPage() {
     inbox?.partner?.partnerLabel ??
     inbox?.partner?.displayName ??
     "Your person";
+
+  const currentTheme = (couple?.couple.theme ?? "ocean") as ThemeKey;
+  const rawBackground = couple?.couple.chatBackground ?? "none";
+  const chatBackground: ChatBackgroundKey = isChatBackgroundKey(rawBackground)
+    ? rawBackground
+    : "none";
+
+  async function onThemePick(theme: ThemeKey) {
+    try {
+      await updateProfile({ theme });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn’t update theme");
+    }
+  }
+
+  async function onBackgroundPick(chatBackground: ChatBackgroundKey) {
+    try {
+      await updateProfile({ chatBackground });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Couldn’t update background",
+      );
+    }
+  }
 
   function draftPreview(
     message: NonNullable<typeof messages>[number],
@@ -340,7 +374,7 @@ export default function ChatThreadPage() {
 
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden bg-white">
-      <header className="flex shrink-0 items-center gap-3 border-b border-[color:var(--samba-border)] px-3 py-2.5 sm:px-4">
+      <header className="relative z-30 flex shrink-0 items-center gap-3 border-b border-[color:var(--samba-border)] bg-white px-3 py-2.5 sm:px-4">
         <Link
           href="/chat"
           className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)]"
@@ -371,9 +405,110 @@ export default function ChatThreadPage() {
             {partnerTyping ? "Typing…" : "Private chat"}
           </p>
         </div>
+
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)] ${
+              appearOpen ? "bg-[color:var(--samba-surface)]" : ""
+            }`}
+            aria-label="Chat appearance"
+            aria-expanded={appearOpen}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuId(null);
+              setAppearOpen((o) => !o);
+            }}
+          >
+            <Palette className="size-5" strokeWidth={1.75} />
+          </button>
+
+          {appearOpen ? (
+            <div
+              className="absolute right-0 top-12 z-40 w-[min(18.5rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[color:var(--samba-border)] bg-white p-3 shadow-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="px-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--samba-muted)]">
+                Theme
+              </p>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {(Object.keys(THEMES) as ThemeKey[]).map((key) => {
+                  const t = THEMES[key];
+                  const selected = currentTheme === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      title={t.label}
+                      className="flex flex-col items-center gap-1"
+                      onClick={() => void onThemePick(key)}
+                    >
+                      <span
+                        className="block h-10 w-10 overflow-hidden rounded-full border-2"
+                        style={{
+                          borderColor: selected ? t.accent : "transparent",
+                          background: t.gradient,
+                          boxShadow: selected
+                            ? `0 0 0 1.5px ${t.accent}`
+                            : undefined,
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={t.preview}
+                          alt=""
+                          className="h-full w-full object-cover opacity-90"
+                        />
+                      </span>
+                      <span className="text-[10px] font-semibold text-[color:var(--samba-ink)]">
+                        {t.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="mt-4 px-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--samba-muted)]">
+                Background
+              </p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {(Object.keys(CHAT_BACKGROUNDS) as ChatBackgroundKey[]).map(
+                  (key) => {
+                    const bg = CHAT_BACKGROUNDS[key];
+                    const selected = chatBackground === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`overflow-hidden rounded-xl border-2 text-left transition ${
+                          selected
+                            ? "border-[color:var(--samba-accent)]"
+                            : "border-[color:var(--samba-border)] hover:border-[color:var(--samba-accent)]/50"
+                        }`}
+                        onClick={() => void onBackgroundPick(key)}
+                      >
+                        <span
+                          className="block h-12 w-full"
+                          style={chatBackgroundStyle(key)}
+                          aria-hidden
+                        />
+                        <span className="block px-1.5 py-1 text-[10px] font-semibold leading-tight text-[color:var(--samba-ink)]">
+                          {bg.label}
+                        </span>
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        style={chatBackgroundStyle(chatBackground)}
+      >
         <div className="mx-auto w-full max-w-2xl space-y-2 px-3 py-3 sm:px-4">
           {messages.length === 0 ? (
             <EmptyState

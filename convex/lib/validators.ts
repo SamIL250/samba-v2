@@ -16,6 +16,15 @@ export const themeValidator = v.union(
   v.literal("midnight"),
 );
 
+export const chatBackgroundValidator = v.union(
+  v.literal("none"),
+  v.literal("dots"),
+  v.literal("hearts"),
+  v.literal("waves"),
+  v.literal("grid"),
+  v.literal("petals"),
+);
+
 export const softSignalKindValidator = v.union(
   v.literal("hug"),
   v.literal("miss_you"),
