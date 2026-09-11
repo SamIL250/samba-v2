@@ -8,6 +8,7 @@ import { Plus, XClose } from "@untitledui/icons";
 import { api } from "@/lib/api";
 import { CelebrationCard } from "@/components/CelebrationCard";
 import { ConfettiBurst } from "@/components/ConfettiBurst";
+import { HomeSkeleton } from "@/components/skeletons";
 import {
   isMoodGender,
   isPartnerMoodKey,
@@ -101,9 +102,7 @@ export default function HomePage() {
   }, [moodOpen]);
 
   if (!data) {
-    return (
-      <p className="animate-pulse text-sm opacity-60">Loading your nest…</p>
-    );
+    return <HomeSkeleton />;
   }
 
   const partnerPresence = data.presence.find(

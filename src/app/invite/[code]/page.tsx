@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { SambaLogo } from "@/components/SambaLogo";
 import { EnsureUser } from "@/components/EnsureUser";
 import { cleanErrorMessage } from "@/lib/errors";
+import { InviteSkeleton, Skeleton } from "@/components/skeletons";
 
 export default function InvitePage() {
   const params = useParams<{ code: string }>();
@@ -47,11 +48,7 @@ export default function InvitePage() {
   }
 
   if (shouldLeave) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <p className="animate-pulse text-sm opacity-60">Opening your space…</p>
-      </div>
-    );
+    return <InviteSkeleton />;
   }
 
   return (
@@ -62,7 +59,12 @@ export default function InvitePage() {
       <div className="w-full max-w-md p-8">
         <SambaLogo href="/" size={48} />
         {preview === undefined ? (
-          <p className="mt-4 animate-pulse text-sm opacity-60">Checking invite…</p>
+          <div className="mt-6 space-y-3">
+            <Skeleton className="h-9 w-56 max-w-full rounded-xl" />
+            <Skeleton className="h-4 w-full rounded-md" />
+            <Skeleton className="h-4 w-[80%] rounded-md" />
+            <Skeleton className="mt-4 h-12 w-full rounded-[1rem]" />
+          </div>
         ) : preview === null ? (
           <>
             <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">

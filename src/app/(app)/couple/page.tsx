@@ -12,6 +12,7 @@ import {
   type ChatBackgroundKey,
 } from "@/lib/chatBackgrounds";
 import { THEMES, type ThemeKey } from "@/lib/theme";
+import { CoupleSkeleton } from "@/components/skeletons";
 
 function toDateInput(value?: number) {
   if (!value) return "";
@@ -94,9 +95,7 @@ export default function CoupleProfilePage() {
   }
 
   if (couple === undefined || me === undefined) {
-    return (
-      <p className="animate-pulse text-sm opacity-60">Opening couple profile…</p>
-    );
+    return <CoupleSkeleton />;
   }
 
   if (!couple || !me) {

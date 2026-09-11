@@ -29,6 +29,7 @@ import {
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { api, type Id } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
+import { ChatThreadSkeleton } from "@/components/skeletons";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import {
   CHAT_BACKGROUNDS,
@@ -505,11 +506,7 @@ export default function ChatThreadPage() {
   }
 
   if (conversation === undefined || messages === undefined) {
-    return (
-      <div className="fixed inset-0 z-10 flex items-center justify-center bg-white">
-        <p className="animate-pulse text-sm opacity-60">Opening chat…</p>
-      </div>
-    );
+    return <ChatThreadSkeleton />;
   }
 
   if (!conversation) {

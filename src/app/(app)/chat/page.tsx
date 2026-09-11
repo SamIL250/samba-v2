@@ -7,6 +7,7 @@ import { MessageChatCircle, XClose } from "@untitledui/icons";
 import { api, type Id } from "@/lib/api";
 import { formatRelative } from "@/lib/theme";
 import { SOFT_SIGNALS, signalMeta, type SoftSignalKind } from "@/lib/signals";
+import { ChatHubSkeleton } from "@/components/skeletons";
 
 export default function MessagesHubPage() {
   const inbox = useQuery(api.signals.inbox);
@@ -54,9 +55,7 @@ export default function MessagesHubPage() {
   }
 
   if (inbox === undefined) {
-    return (
-      <p className="animate-pulse text-sm opacity-60">Opening messages…</p>
-    );
+    return <ChatHubSkeleton />;
   }
 
   if (!inbox) {

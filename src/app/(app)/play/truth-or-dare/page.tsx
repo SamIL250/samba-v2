@@ -6,6 +6,7 @@ import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft } from "@untitledui/icons";
 import { api, type Id } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
+import { TruthOrDareSkeleton } from "@/components/skeletons";
 import { formatRelative } from "@/lib/theme";
 
 export default function TruthOrDarePage() {
@@ -72,7 +73,7 @@ export default function TruthOrDarePage() {
   }
 
   if (couple === undefined || history === undefined) {
-    return <p className="animate-pulse text-sm opacity-60">Loading game…</p>;
+    return <TruthOrDareSkeleton />;
   }
 
   if (!couple || couple.couple.status !== "active") {

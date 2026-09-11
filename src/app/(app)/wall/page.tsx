@@ -18,6 +18,7 @@ import {
 } from "@untitledui/icons";
 import { api } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
+import { WallSkeleton } from "@/components/skeletons";
 import { formatRelative } from "@/lib/theme";
 
 type WallPost = NonNullable<
@@ -362,9 +363,7 @@ export default function WallPage() {
   }, [lightbox]);
 
   if (posts === undefined) {
-    return (
-      <p className="animate-pulse text-sm opacity-60">Opening the wall…</p>
-    );
+    return <WallSkeleton />;
   }
 
   if (posts.length === 0) {

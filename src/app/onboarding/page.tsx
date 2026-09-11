@@ -8,6 +8,7 @@ import { EnsureUser } from "@/components/EnsureUser";
 import { SambaMark } from "@/components/SambaLogo";
 import { FieldKey, mapOnboardingError } from "@/lib/errors";
 import { THEMES, themeCssVars, type ThemeKey } from "@/lib/theme";
+import { OnboardingSkeleton } from "@/components/skeletons";
 
 type FieldErrors = Partial<Record<FieldKey, string>>;
 
@@ -52,13 +53,7 @@ export default function OnboardingPage() {
   }
 
   if (me === undefined || shouldLeave) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <p className="animate-pulse text-sm opacity-60">
-          {shouldLeave ? "Opening your space…" : "Loading…"}
-        </p>
-      </div>
-    );
+    return <OnboardingSkeleton />;
   }
 
   async function onCreate(e: FormEvent) {

@@ -13,6 +13,7 @@ import {
 import { api, type Id } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
 import { formatRelative } from "@/lib/theme";
+import { MomentsSkeleton } from "@/components/skeletons";
 
 const GRID_SPANS = [
   "col-span-2 row-span-2",
@@ -47,9 +48,7 @@ export default function MomentsPage() {
   }, [menuId]);
 
   if (moments === undefined) {
-    return (
-      <p className="animate-pulse text-sm opacity-60">Gathering moments…</p>
-    );
+    return <MomentsSkeleton />;
   }
 
   if (moments.length === 0) {

@@ -10,6 +10,7 @@ import { SoftSignalOverlay } from "./SoftSignalOverlay";
 import { TruthOrDareOverlay } from "./TruthOrDareOverlay";
 import { themeCssVars, type ThemeKey } from "@/lib/theme";
 import { EnsureUser } from "./EnsureUser";
+import { AppShellSkeleton } from "@/components/skeletons";
 
 function CoupleShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
@@ -41,35 +42,19 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
   }, [couple?.couple?._id, heartbeat]);
 
   if (authLoading || !isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--samba-gradient,#F3F8F8)] text-[color:var(--samba-ink,#102A2B)]">
-        <p className="animate-pulse text-sm opacity-60">Connecting your session…</p>
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   if (me === undefined || couple === undefined) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--samba-gradient,#F3F8F8)] text-[color:var(--samba-ink,#102A2B)]">
-        <p className="animate-pulse text-sm opacity-60">Opening your space…</p>
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   if (!me) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--samba-gradient,#F3F8F8)]">
-        <p className="animate-pulse text-sm opacity-60">Setting up your profile…</p>
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   if (!me.membership || !couple) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--samba-gradient,#F3F8F8)]">
-        <p className="text-sm opacity-60">Taking you to onboarding…</p>
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   const theme = (couple.couple.theme ?? "ocean") as ThemeKey;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
+import { PlaySkeleton } from "@/components/skeletons";
 
 const GAMES = [
   {
@@ -18,7 +19,7 @@ export default function PlayHubPage() {
   const couple = useQuery(api.couples.myCouple);
 
   if (couple === undefined) {
-    return <p className="animate-pulse text-sm opacity-60">Loading games…</p>;
+    return <PlaySkeleton />;
   }
 
   if (!couple || couple.couple.status !== "active") {
