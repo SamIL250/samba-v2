@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, startTransition, useEffect, useState } from "react";
+import Image from "next/image";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -24,6 +25,16 @@ export default function OnboardingPage() {
   const [code, setCode] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const shouldLeave = Boolean(me?.membership) || done;
+
+  useEffect(() => {
+    if (!shouldLeave) return;
+    startTransition(() => {
+      router.replace("/home");
+    });
+  }, [shouldLeave, router]);
 
   function clearField(field: FieldKey) {
     setErrors((prev) => {
@@ -40,17 +51,14 @@ export default function OnboardingPage() {
     setErrors({});
   }
 
-  if (me === undefined) {
+  if (me === undefined || shouldLeave) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="animate-pulse text-sm opacity-60">Loading…</p>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <p className="animate-pulse text-sm opacity-60">
+          {shouldLeave ? "Opening your space…" : "Loading…"}
+        </p>
       </div>
     );
-  }
-
-  if (me?.membership) {
-    router.replace("/home");
-    return null;
   }
 
   async function onCreate(e: FormEvent) {
@@ -72,11 +80,10 @@ export default function OnboardingPage() {
         partnerLabel: label || me?.user.displayName || "Me",
         theme,
       });
-      router.push("/home");
+      setDone(true);
     } catch (err) {
       const mapped = mapOnboardingError(err, "create");
       setErrors({ [mapped.field]: mapped.message });
-    } finally {
       setBusy(false);
     }
   }
@@ -99,11 +106,10 @@ export default function OnboardingPage() {
         code,
         partnerLabel: label || me?.user.displayName || "Me",
       });
-      router.push("/home");
+      setDone(true);
     } catch (err) {
       const mapped = mapOnboardingError(err, "join");
       setErrors({ [mapped.field]: mapped.message });
-    } finally {
       setBusy(false);
     }
   }
@@ -190,27 +196,56 @@ export default function OnboardingPage() {
                   aria-invalid={Boolean(errors.label)}
                 />
               </label>
-              <fieldset className="space-y-2">
+              <fieldset className="space-y-3">
                 <legend className="text-sm font-medium">Theme</legend>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setTheme(key)}
-                      className="rounded-xl px-3 py-3 text-sm font-semibold"
-                      style={{
-                        background: THEMES[key].surface,
-                        color: THEMES[key].ink,
-                        border:
-                          theme === key
-                            ? `1.5px solid ${THEMES[key].accent}`
+                <p className="text-sm text-[color:var(--samba-muted)]">
+                  Pick the mood for your shared space.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {(Object.keys(THEMES) as ThemeKey[]).map((key) => {
+                    const selected = theme === key;
+                    const t = THEMES[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setTheme(key)}
+                        aria-pressed={selected}
+                        className="overflow-hidden rounded-2xl text-left transition"
+                        style={{
+                          border: selected
+                            ? `1.5px solid ${t.accent}`
                             : "1px solid var(--samba-border)",
-                      }}
-                    >
-                      {THEMES[key].label}
-                    </button>
-                  ))}
+                          background: "#fff",
+                        }}
+                      >
+                        <div className="relative aspect-[4/3] w-full bg-[color:var(--samba-surface)]">
+                          <Image
+                            src={t.preview}
+                            alt={`${t.label} theme preview`}
+                            fill
+                            sizes="(max-width: 640px) 45vw, 220px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-2.5">
+                          <span
+                            className="h-3 w-3 shrink-0 rounded-full"
+                            style={{ background: t.accent }}
+                            aria-hidden
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold tracking-tight">
+                              {t.label}
+                            </p>
+                            <p className="text-xs text-[color:var(--samba-muted)]">
+                              {t.blurb}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </fieldset>
               <button className="samba-btn w-full" disabled={busy} type="submit">

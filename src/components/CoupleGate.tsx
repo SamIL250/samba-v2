@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery, useConvexAuth } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { startTransition, useEffect } from "react";
 import { api } from "@/lib/api";
 import { AppNav } from "./AppNav";
+import { AppBottomNav } from "./AppBottomNav";
 import { themeCssVars, type ThemeKey } from "@/lib/theme";
 import { EnsureUser } from "./EnsureUser";
 
@@ -19,7 +20,9 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
     if (authLoading || !isAuthenticated) return;
     if (me === undefined) return;
     if (me && !me.membership) {
-      router.replace("/onboarding");
+      startTransition(() => {
+        router.replace("/onboarding");
+      });
     }
   }, [authLoading, isAuthenticated, me, router]);
 
@@ -76,7 +79,8 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
       }}
     >
       <AppNav coupleName={couple.couple.name} />
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-24">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6 pb-28 md:pb-24">{children}</main>
+      <AppBottomNav />
     </div>
   );
 }

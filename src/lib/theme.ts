@@ -1,6 +1,8 @@
 export const THEMES = {
   ocean: {
     label: "Honey",
+    blurb: "Bright & warm",
+    preview: "/brand/themes/theme-honey.png",
     accent: "#E4B429",
     accentSoft: "#F0C94A",
     glow: "#F8E7A8",
@@ -10,6 +12,8 @@ export const THEMES = {
   },
   sunset: {
     label: "Amber",
+    blurb: "Deeper gold",
+    preview: "/brand/themes/theme-amber.png",
     accent: "#D9A21B",
     accentSoft: "#E8B84A",
     glow: "#F3DF9E",
@@ -19,6 +23,8 @@ export const THEMES = {
   },
   forest: {
     label: "Champagne",
+    blurb: "Soft & muted",
+    preview: "/brand/themes/theme-champagne.png",
     accent: "#C9A227",
     accentSoft: "#DBB84A",
     glow: "#EFE0A8",
@@ -28,6 +34,8 @@ export const THEMES = {
   },
   midnight: {
     label: "Linen",
+    blurb: "Quiet & light",
+    preview: "/brand/themes/theme-linen.png",
     accent: "#C4A84A",
     accentSoft: "#D4BC6A",
     glow: "#EDE3C0",

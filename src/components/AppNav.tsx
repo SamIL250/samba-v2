@@ -27,7 +27,9 @@ export function AppNav({ coupleName }: { coupleName?: string }) {
             </span>
           ) : null}
         </div>
-        <nav className="flex items-center gap-1 overflow-x-auto">
+
+        {/* Desktop / tablet top links */}
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {LINKS.map((link) => {
             const active =
               pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -46,6 +48,7 @@ export function AppNav({ coupleName }: { coupleName?: string }) {
             );
           })}
         </nav>
+
         <UserButton />
       </div>
     </header>

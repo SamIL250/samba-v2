@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.2",
+    "@untitledui/icons": "^0.0.22",
     "cloudinary": "^2.11.0",
     "convex": "^1.45.0",
     "next": "16.3.4",
