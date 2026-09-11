@@ -77,7 +77,11 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="min-h-screen text-[color:var(--samba-ink)]"
+      className={
+        isThread
+          ? "h-dvh overflow-hidden text-[color:var(--samba-ink)]"
+          : "min-h-screen text-[color:var(--samba-ink)]"
+      }
       style={{
         ...vars,
         background: isThread

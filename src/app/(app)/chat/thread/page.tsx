@@ -102,6 +102,7 @@ export default function ChatThreadPage() {
   const [highlightId, setHighlightId] = useState<Id<"messages"> | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -113,11 +114,17 @@ export default function ChatThreadPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const emojiPanelRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const appearPanelRef = useRef<HTMLDivElement>(null);
+  const appearButtonRef = useRef<HTMLButtonElement>(null);
   const messageRefs = useRef<Map<string, HTMLElement>>(new Map());
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressOrigin = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
   }, [messages?.length]);
 
   useEffect(() => {
@@ -140,7 +147,7 @@ export default function ChatThreadPage() {
   }, []);
 
   useEffect(() => {
-    function onDocClick(e: MouseEvent) {
+    function onDocPointerDown(e: PointerEvent) {
       const target = e.target;
       if (!(target instanceof Node)) return;
 
@@ -152,6 +159,29 @@ export default function ChatThreadPage() {
         return;
       }
 
+      if (
+        appearOpen &&
+        (appearPanelRef.current?.contains(target) ||
+          appearButtonRef.current?.contains(target))
+      ) {
+        return;
+      }
+
+      if (menuId) {
+        const openMenu = document.querySelector(
+          `[data-message-menu="${menuId}"]`,
+        );
+        const openTrigger = document.querySelector(
+          `[data-message-menu-trigger="${menuId}"]`,
+        );
+        if (
+          openMenu?.contains(target) ||
+          openTrigger?.contains(target)
+        ) {
+          return;
+        }
+      }
+
       setMenuId(null);
       setAppearOpen(false);
       if (emojiOpen) setEmojiOpen(false);
@@ -159,13 +189,19 @@ export default function ChatThreadPage() {
     if (!menuId && !appearOpen && !emojiOpen) return;
     // Defer so the opening click doesn't immediately close the picker
     const id = window.setTimeout(() => {
-      document.addEventListener("mousedown", onDocClick);
+      document.addEventListener("pointerdown", onDocPointerDown);
     }, 0);
     return () => {
       window.clearTimeout(id);
-      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("pointerdown", onDocPointerDown);
     };
   }, [menuId, appearOpen, emojiOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -316,14 +352,47 @@ export default function ChatThreadPage() {
     });
   }
 
+  function clearLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    longPressOrigin.current = null;
+  }
+
+  function beginLongPress(
+    messageId: Id<"messages">,
+    clientX: number,
+    clientY: number,
+  ) {
+    clearLongPress();
+    longPressOrigin.current = { x: clientX, y: clientY };
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      longPressOrigin.current = null;
+      setAppearOpen(false);
+      setEmojiOpen(false);
+      setMenuId(messageId);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(12);
+      }
+    }, 480);
+  }
+
   function scrollToMessage(messageId: Id<"messages">) {
     const el = messageRefs.current.get(messageId);
+    const list = listRef.current;
     if (!el) {
       setError("That message isn’t available here anymore");
       window.setTimeout(() => setError(null), 2500);
       return;
     }
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (list) {
+      const listRect = list.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      list.scrollTop +=
+        elRect.top - listRect.top - listRect.height / 2 + elRect.height / 2;
+    }
     setHighlightId(messageId);
     if (highlightTimer.current) clearTimeout(highlightTimer.current);
     highlightTimer.current = setTimeout(() => setHighlightId(null), 1800);
@@ -437,7 +506,7 @@ export default function ChatThreadPage() {
 
   if (conversation === undefined || messages === undefined) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-white">
+      <div className="fixed inset-0 z-10 flex items-center justify-center bg-white">
         <p className="animate-pulse text-sm opacity-60">Opening chat…</p>
       </div>
     );
@@ -462,8 +531,8 @@ export default function ChatThreadPage() {
   }
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-[color:var(--samba-chat-chrome)]">
-      <header className="relative z-30 flex shrink-0 items-center gap-3 border-b border-[color:var(--samba-border)] bg-[color:var(--samba-chat-chrome)] px-3 py-2.5 sm:px-4">
+    <div className="fixed inset-0 z-10 flex flex-col overflow-hidden bg-[color:var(--samba-chat-chrome)]">
+      <header className="relative z-30 flex shrink-0 items-center gap-3 border-b border-[color:var(--samba-border)] bg-[color:var(--samba-chat-chrome)] px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-4">
         <Link
           href="/chat"
           className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)]"
@@ -497,6 +566,7 @@ export default function ChatThreadPage() {
 
         <div className="relative shrink-0">
           <button
+            ref={appearButtonRef}
             type="button"
             className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)] ${
               appearOpen ? "bg-[color:var(--samba-surface)]" : ""
@@ -514,6 +584,7 @@ export default function ChatThreadPage() {
 
           {appearOpen ? (
             <div
+              ref={appearPanelRef}
               className="absolute right-0 top-12 z-40 w-[min(18.5rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[color:var(--samba-border)] bg-white p-3 shadow-sm"
               onClick={(e) => e.stopPropagation()}
             >
@@ -599,6 +670,7 @@ export default function ChatThreadPage() {
       </header>
 
       <div
+        ref={listRef}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
         style={chatBackgroundStyle(chatBackground)}
       >
@@ -660,15 +732,43 @@ export default function ChatThreadPage() {
                     />
                   ) : null}
 
-                  <div className="relative min-w-0 max-w-[min(78%,24rem)]">
+                  <div
+                    className="relative min-w-0 max-w-[min(78%,24rem)] touch-manipulation"
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return;
+                      beginLongPress(message._id, e.clientX, e.clientY);
+                    }}
+                    onPointerUp={clearLongPress}
+                    onPointerCancel={clearLongPress}
+                    onPointerMove={(e) => {
+                      const origin = longPressOrigin.current;
+                      if (!origin) return;
+                      const dx = Math.abs(e.clientX - origin.x);
+                      const dy = Math.abs(e.clientY - origin.y);
+                      if (dx > 10 || dy > 10) clearLongPress();
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      clearLongPress();
+                      setAppearOpen(false);
+                      setEmojiOpen(false);
+                      setMenuId(message._id);
+                    }}
+                  >
                     <button
                       type="button"
-                      className={`absolute top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 opacity-0 shadow-sm transition group-hover:opacity-100 focus:opacity-100 ${
+                      data-message-menu-trigger={message._id}
+                      className={`absolute top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm transition ${
                         mine ? "-left-9" : "-right-9"
-                      } ${menuOpen ? "opacity-100" : ""}`}
+                      } ${
+                        menuOpen
+                          ? "opacity-100"
+                          : "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                      }`}
                       aria-label="Message actions"
                       onClick={(e) => {
                         e.stopPropagation();
+                        clearLongPress();
                         setMenuId(menuOpen ? null : message._id);
                       }}
                     >
@@ -677,6 +777,7 @@ export default function ChatThreadPage() {
 
                     {menuOpen ? (
                       <div
+                        data-message-menu={message._id}
                         className={`absolute z-20 min-w-[11rem] overflow-hidden rounded-xl border border-[color:var(--samba-border)] bg-white py-1 text-sm shadow-sm ${
                           mine ? "right-0 top-9" : "left-0 top-9"
                         }`}
