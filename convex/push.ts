@@ -20,6 +20,14 @@ export const status = query({
   },
 });
 
+/** Public VAPID key for browser subscribe — safe to expose. */
+export const publicKey = query({
+  args: {},
+  handler: async () => {
+    return process.env.VAPID_PUBLIC_KEY ?? null;
+  },
+});
+
 export const saveSubscription = mutation({
   args: {
     endpoint: v.string(),

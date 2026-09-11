@@ -30,6 +30,7 @@ function isStandalone() {
 }
 
 async function ensureSubscription(
+  publicKey: string,
   save: (args: {
     endpoint: string;
     p256dh: string;
@@ -37,19 +38,12 @@ async function ensureSubscription(
     userAgent?: string;
   }) => Promise<unknown>,
 ) {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  if (!publicKey) {
-    throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY");
-  }
-
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(
-        publicKey,
-      ) as BufferSource,
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
     });
   }
 
@@ -72,21 +66,25 @@ async function ensureSubscription(
  */
 export function PushNotifications() {
   const status = useQuery(api.push.status);
+  const vapidPublicKey = useQuery(api.push.publicKey);
   const saveSubscription = useMutation(api.push.saveSubscription);
   const [showOptIn, setShowOptIn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const publicKey =
+    vapidPublicKey || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null;
+
   useEffect(() => {
     if (!pushSupported()) return;
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return;
+    if (!publicKey) return;
 
     let cancelled = false;
 
     async function sync() {
       if (Notification.permission === "granted") {
         try {
-          await ensureSubscription(saveSubscription);
+          await ensureSubscription(publicKey!, saveSubscription);
         } catch {
           // Soft fail — user can retry via the banner.
         }
@@ -95,11 +93,10 @@ export function PushNotifications() {
 
       if (Notification.permission !== "default") return;
       if (wasDismissedRecently()) return;
-      // Prefer prompting after install, but still allow in browser.
       if (!cancelled) {
         window.setTimeout(() => {
           if (!cancelled) setShowOptIn(true);
-        }, isStandalone() ? 1200 : 4500);
+        }, isStandalone() ? 1200 : 2500);
       }
     }
 
@@ -107,22 +104,30 @@ export function PushNotifications() {
     return () => {
       cancelled = true;
     };
-  }, [saveSubscription]);
+  }, [publicKey, saveSubscription]);
 
   async function onEnable() {
+    if (!publicKey) {
+      setError("Push isn’t configured yet — try again after deploy.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        setError("Notifications stayed off — you can enable them in settings anytime.");
+        setError(
+          "Notifications stayed off — you can enable them in settings anytime.",
+        );
         setBusy(false);
         return;
       }
-      await ensureSubscription(saveSubscription);
+      await ensureSubscription(publicKey, saveSubscription);
       setShowOptIn(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn’t enable notifications");
+      setError(
+        err instanceof Error ? err.message : "Couldn’t enable notifications",
+      );
     } finally {
       setBusy(false);
     }
@@ -175,13 +180,17 @@ export function PushNotifications() {
         ) : null}
 
         <div className="mt-4 flex gap-2">
-          <button type="button" className="samba-btn-ghost flex-1" onClick={dismiss}>
+          <button
+            type="button"
+            className="samba-btn-ghost flex-1"
+            onClick={dismiss}
+          >
             Not now
           </button>
           <button
             type="button"
             className="samba-btn flex-1"
-            disabled={busy}
+            disabled={busy || !publicKey}
             onClick={() => void onEnable()}
           >
             {busy ? "Enabling…" : "Turn on"}
