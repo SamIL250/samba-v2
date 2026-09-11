@@ -153,6 +153,19 @@ h3,
   padding-bottom: 0.7rem;
 }
 
+@keyframes samba-message-flash {
+  0% {
+    background-color: color-mix(in srgb, var(--samba-accent) 28%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.samba-message-highlight {
+  animation: samba-message-flash 1.8s ease-out;
+}
+
 .samba-field-error {
   color: #b45309;
 }

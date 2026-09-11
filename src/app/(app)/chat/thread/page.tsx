@@ -15,6 +15,8 @@ import {
   Camera01,
   CornerUpLeft,
   DotsHorizontal,
+  Download01,
+  FaceSmile,
   File04,
   Image01,
   Microphone01,
@@ -24,6 +26,7 @@ import {
   Trash01,
   XClose,
 } from "@untitledui/icons";
+import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { api, type Id } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
 import { uploadToCloudinary } from "@/lib/cloudinary";
@@ -44,6 +47,24 @@ type ReplyDraft = {
   preview: string;
   senderName: string;
 };
+
+async function downloadMedia(url: string, filename: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
 
 export default function ChatThreadPage() {
   const conversation = useQuery(api.chat.getConversation);
@@ -73,6 +94,12 @@ export default function ChatThreadPage() {
   const [replyTo, setReplyTo] = useState<ReplyDraft | null>(null);
   const [menuId, setMenuId] = useState<Id<"messages"> | null>(null);
   const [appearOpen, setAppearOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
+  const [highlightId, setHighlightId] = useState<Id<"messages"> | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,6 +111,10 @@ export default function ChatThreadPage() {
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPanelRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const messageRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,19 +134,47 @@ export default function ChatThreadPage() {
     return () => {
       if (typingTimer.current) clearTimeout(typingTimer.current);
       if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
   useEffect(() => {
-    function onDocClick() {
+    function onDocClick(e: MouseEvent) {
+      const target = e.target;
+      if (!(target instanceof Node)) return;
+
+      if (
+        emojiOpen &&
+        (emojiPanelRef.current?.contains(target) ||
+          emojiButtonRef.current?.contains(target))
+      ) {
+        return;
+      }
+
       setMenuId(null);
       setAppearOpen(false);
+      if (emojiOpen) setEmojiOpen(false);
     }
-    if (!menuId && !appearOpen) return;
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, [menuId, appearOpen]);
+    if (!menuId && !appearOpen && !emojiOpen) return;
+    // Defer so the opening click doesn't immediately close the picker
+    const id = window.setTimeout(() => {
+      document.addEventListener("mousedown", onDocClick);
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener("mousedown", onDocClick);
+    };
+  }, [menuId, appearOpen, emojiOpen]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    function onKey(e: Event) {
+      if ((e as globalThis.KeyboardEvent).key === "Escape") setLightbox(null);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [lightbox]);
 
   const partnerTyping = couple?.presence.find(
     (p) =>
@@ -238,6 +297,36 @@ export default function ChatThreadPage() {
     if (!text.trim() || uploading) return;
     const form = e.currentTarget.form;
     if (form) form.requestSubmit();
+  }
+
+  function insertEmoji(emoji: string) {
+    const el = inputRef.current;
+    if (!el) {
+      onTyping(text + emoji);
+      return;
+    }
+    const start = el.selectionStart ?? text.length;
+    const end = el.selectionEnd ?? text.length;
+    const next = text.slice(0, start) + emoji + text.slice(end);
+    onTyping(next);
+    window.requestAnimationFrame(() => {
+      const pos = start + emoji.length;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    });
+  }
+
+  function scrollToMessage(messageId: Id<"messages">) {
+    const el = messageRefs.current.get(messageId);
+    if (!el) {
+      setError("That message isn’t available here anymore");
+      window.setTimeout(() => setError(null), 2500);
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(messageId);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightId(null), 1800);
   }
 
   async function uploadAndSend(file: File, kind: MediaKind) {
@@ -551,7 +640,17 @@ export default function ChatThreadPage() {
               return (
                 <div
                   key={message._id}
-                  className={`group relative flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}
+                  ref={(node) => {
+                    if (node) messageRefs.current.set(message._id, node);
+                    else messageRefs.current.delete(message._id);
+                  }}
+                  className={`group relative flex items-end gap-2 rounded-2xl transition ${
+                    mine ? "justify-end" : "justify-start"
+                  } ${
+                    highlightId === message._id
+                      ? "samba-message-highlight"
+                      : ""
+                  }`}
                 >
                   {!mine ? (
                     <span
@@ -628,16 +727,17 @@ export default function ChatThreadPage() {
                       }`}
                     >
                       {message.replyTo ? (
-                        <div
-                          className={`mb-2 rounded-lg border-l-2 px-2 py-1.5 text-xs ${
+                        <button
+                          type="button"
+                          className={`mb-2 w-full rounded-lg border-l-2 px-2 py-1.5 text-left text-xs transition hover:brightness-95 ${
                             mine
                               ? "border-[color:var(--samba-accent)] bg-white/10"
                               : "border-[color:var(--samba-accent)] bg-black/5"
                           }`}
+                          onClick={() => scrollToMessage(message.replyTo!._id)}
+                          aria-label={`Go to message from ${message.replyTo.senderName}`}
                         >
-                          <p
-                            className={`font-semibold ${mine ? "text-[color:var(--samba-accent)]" : "text-[color:var(--samba-accent)]"}`}
-                          >
+                          <p className="font-semibold text-[color:var(--samba-accent)]">
                             {message.replyTo.senderName}
                           </p>
                           <p
@@ -645,7 +745,7 @@ export default function ChatThreadPage() {
                           >
                             {message.replyTo.preview}
                           </p>
-                        </div>
+                        </button>
                       ) : null}
 
                       {message.deletedForEveryone ? (
@@ -659,23 +759,54 @@ export default function ChatThreadPage() {
                       ) : (
                         <>
                           {message.type === "image" && message.media ? (
-                            <div className="relative">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={message.media.secureUrl}
-                                alt=""
-                                className={`max-h-64 w-full object-cover ${
-                                  message.body
-                                    ? "mb-1.5 rounded-xl"
-                                    : "rounded-[0.95rem]"
-                                }`}
-                              />
+                            <div className="group/image relative">
+                              <button
+                                type="button"
+                                className="block w-full overflow-hidden text-left"
+                                onClick={() =>
+                                  setLightbox({
+                                    url: message.media!.secureUrl,
+                                    name: `samba-${message._id}.jpg`,
+                                  })
+                                }
+                                aria-label="View photo"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={message.media.secureUrl}
+                                  alt=""
+                                  className={`max-h-64 w-full object-cover transition group-hover/image:brightness-95 ${
+                                    message.body
+                                      ? "mb-1.5 rounded-xl"
+                                      : "rounded-[0.95rem]"
+                                  }`}
+                                />
+                              </button>
+                              <div className="absolute right-2 top-2 flex gap-1 opacity-100 transition sm:opacity-0 sm:group-hover/image:opacity-100">
+                                <button
+                                  type="button"
+                                  className="flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm"
+                                  aria-label="Download photo"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void downloadMedia(
+                                      message.media!.secureUrl,
+                                      `samba-${message._id}.jpg`,
+                                    );
+                                  }}
+                                >
+                                  <Download01
+                                    className="size-4"
+                                    strokeWidth={2}
+                                  />
+                                </button>
+                              </div>
                               {!message.body ? (
                                 <time
                                   dateTime={new Date(
                                     message.createdAt,
                                   ).toISOString()}
-                                  className="absolute bottom-1.5 right-2 rounded-md bg-black/35 px-1.5 py-0.5 text-[10px] leading-none tabular-nums text-white/95"
+                                  className="pointer-events-none absolute bottom-1.5 right-2 rounded-md bg-black/35 px-1.5 py-0.5 text-[10px] leading-none tabular-nums text-white/95"
                                 >
                                   {time}
                                 </time>
@@ -859,14 +990,17 @@ export default function ChatThreadPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={onSend} className="flex items-end gap-2">
+            <form onSubmit={onSend} className="relative flex items-end gap-2">
               <button
                 type="button"
                 className="relative mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
                 aria-label={attachOpen ? "Close attach menu" : "Attach"}
                 aria-expanded={attachOpen}
                 disabled={uploading}
-                onClick={() => setAttachOpen((o) => !o)}
+                onClick={() => {
+                  setEmojiOpen(false);
+                  setAttachOpen((o) => !o);
+                }}
               >
                 {uploading ? (
                   <span
@@ -880,19 +1014,57 @@ export default function ChatThreadPage() {
                 )}
               </button>
 
-              <textarea
-                ref={inputRef}
-                className="samba-input samba-composer-input min-h-[2.75rem] flex-1 resize-none overflow-hidden"
-                rows={1}
-                value={text}
-                onChange={(e) => onTyping(e.target.value)}
-                onKeyDown={onComposerKeyDown}
-                placeholder={
-                  replyTo ? "Write your reply…" : "Write to your person…"
-                }
-                aria-label="Message"
-                disabled={uploading}
-              />
+              <div className="relative min-w-0 flex-1">
+                {emojiOpen ? (
+                  <div
+                    ref={emojiPanelRef}
+                    className="absolute bottom-full left-0 z-30 mb-2 rounded-2xl border border-[color:var(--samba-border)] bg-white shadow-sm"
+                  >
+                    <EmojiPicker
+                      theme={EmojiTheme.LIGHT}
+                      width={Math.min(320, typeof window !== "undefined" ? window.innerWidth - 32 : 320)}
+                      height={360}
+                      previewConfig={{ showPreview: false }}
+                      onEmojiClick={(emojiData) => {
+                        insertEmoji(emojiData.emoji);
+                      }}
+                    />
+                  </div>
+                ) : null}
+                <div className="relative">
+                  <textarea
+                    ref={inputRef}
+                    className="samba-input samba-composer-input min-h-[2.75rem] w-full resize-none overflow-hidden pr-11"
+                    rows={1}
+                    value={text}
+                    onChange={(e) => onTyping(e.target.value)}
+                    onKeyDown={onComposerKeyDown}
+                    placeholder={
+                      replyTo ? "Write your reply…" : "Write to your person…"
+                    }
+                    aria-label="Message"
+                    disabled={uploading}
+                  />
+                  <button
+                    ref={emojiButtonRef}
+                    type="button"
+                    className={`absolute top-1/2 right-1.5 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full transition ${
+                      emojiOpen
+                        ? "bg-[color:var(--samba-surface)] text-[color:var(--samba-accent)]"
+                        : "text-[color:var(--samba-muted)] hover:bg-[color:var(--samba-surface)] hover:text-[color:var(--samba-ink)]"
+                    }`}
+                    aria-label="Emoji"
+                    aria-expanded={emojiOpen}
+                    disabled={uploading}
+                    onClick={() => {
+                      setAttachOpen(false);
+                      setEmojiOpen((o) => !o);
+                    }}
+                  >
+                    <FaceSmile className="size-5" strokeWidth={1.75} />
+                  </button>
+                </div>
+              </div>
 
               {text.trim() ? (
                 <button
@@ -924,6 +1096,45 @@ export default function ChatThreadPage() {
           ) : null}
         </div>
       </div>
+
+      {lightbox ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/85 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo viewer"
+          onClick={() => setLightbox(null)}
+        >
+          <div className="absolute right-4 top-4 flex gap-2">
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+              aria-label="Download photo"
+              onClick={(e) => {
+                e.stopPropagation();
+                void downloadMedia(lightbox.url, lightbox.name);
+              }}
+            >
+              <Download01 className="size-5" strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+              aria-label="Close"
+              onClick={() => setLightbox(null)}
+            >
+              <XClose className="size-5" strokeWidth={2} />
+            </button>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightbox.url}
+            alt=""
+            className="max-h-[90vh] max-w-full rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
