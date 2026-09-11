@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { EnsureUser } from "@/components/EnsureUser";
 import { SambaMark } from "@/components/SambaLogo";
+import { FieldKey, mapOnboardingError } from "@/lib/errors";
 import { THEMES, type ThemeKey } from "@/lib/theme";
+
+type FieldErrors = Partial<Record<FieldKey, string>>;
 
 export default function OnboardingPage() {
   const me = useQuery(api.users.me);
@@ -19,8 +22,23 @@ export default function OnboardingPage() {
   const [label, setLabel] = useState("");
   const [theme, setTheme] = useState<ThemeKey>("ocean");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
+
+  function clearField(field: FieldKey) {
+    setErrors((prev) => {
+      if (!prev[field] && !prev.form) return prev;
+      const next = { ...prev };
+      delete next[field];
+      delete next.form;
+      return next;
+    });
+  }
+
+  function switchMode(next: "create" | "join") {
+    setMode(next);
+    setErrors({});
+  }
 
   if (me === undefined) {
     return (
@@ -37,8 +55,17 @@ export default function OnboardingPage() {
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
+    const next: FieldErrors = {};
+    if (name.trim().length < 2) {
+      next.name = "Choose a name with at least 2 characters";
+    }
+    if (Object.keys(next).length) {
+      setErrors(next);
+      return;
+    }
+
     setBusy(true);
-    setError(null);
+    setErrors({});
     try {
       await createCouple({
         name,
@@ -47,7 +74,8 @@ export default function OnboardingPage() {
       });
       router.push("/home");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create couple");
+      const mapped = mapOnboardingError(err, "create");
+      setErrors({ [mapped.field]: mapped.message });
     } finally {
       setBusy(false);
     }
@@ -55,8 +83,17 @@ export default function OnboardingPage() {
 
   async function onJoin(e: FormEvent) {
     e.preventDefault();
+    const next: FieldErrors = {};
+    if (code.trim().length < 4) {
+      next.code = "Enter the full invite code";
+    }
+    if (Object.keys(next).length) {
+      setErrors(next);
+      return;
+    }
+
     setBusy(true);
-    setError(null);
+    setErrors({});
     try {
       await joinWithCode({
         code,
@@ -64,7 +101,8 @@ export default function OnboardingPage() {
       });
       router.push("/home");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not join");
+      const mapped = mapOnboardingError(err, "join");
+      setErrors({ [mapped.field]: mapped.message });
     } finally {
       setBusy(false);
     }
@@ -83,7 +121,7 @@ export default function OnboardingPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--samba-accent)]">
             Welcome
           </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] font-bold tracking-tight text-3xl">
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">
             Make it a two-person space
           </h1>
           <p className="mt-2 text-[color:var(--samba-muted)]">
@@ -95,39 +133,61 @@ export default function OnboardingPage() {
             <button
               type="button"
               className={mode === "create" ? "samba-btn" : "samba-btn-ghost"}
-              onClick={() => setMode("create")}
+              onClick={() => switchMode("create")}
             >
               Create
             </button>
             <button
               type="button"
               className={mode === "join" ? "samba-btn" : "samba-btn-ghost"}
-              onClick={() => setMode("join")}
+              onClick={() => switchMode("join")}
             >
               Join
             </button>
           </div>
 
+          {errors.form ? (
+            <p className="samba-field-hint mt-4" role="alert">
+              {errors.form}
+            </p>
+          ) : null}
+
           {mode === "create" ? (
-            <form onSubmit={onCreate} className="mt-6 space-y-4">
+            <form onSubmit={onCreate} className="mt-6 space-y-4" noValidate>
               <label className="block space-y-1.5">
-                <span className="text-sm font-medium">Couple name</span>
+                <span
+                  className={`text-sm font-medium ${errors.name ? "samba-field-error" : ""}`}
+                >
+                  {errors.name ? errors.name : "Couple name"}
+                </span>
                 <input
-                  className="samba-input"
+                  className={`samba-input ${errors.name ? "samba-input-error" : ""}`}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    clearField("name");
+                  }}
                   placeholder="e.g. Alex & Sam"
                   required
                   minLength={2}
+                  aria-invalid={Boolean(errors.name)}
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="text-sm font-medium">Your label</span>
+                <span
+                  className={`text-sm font-medium ${errors.label ? "samba-field-error" : ""}`}
+                >
+                  {errors.label ? errors.label : "Your label"}
+                </span>
                 <input
-                  className="samba-input"
+                  className={`samba-input ${errors.label ? "samba-input-error" : ""}`}
                   value={label}
-                  onChange={(e) => setLabel(e.target.value)}
+                  onChange={(e) => {
+                    setLabel(e.target.value);
+                    clearField("label");
+                  }}
                   placeholder={me?.user.displayName ?? "Your name in chat"}
+                  aria-invalid={Boolean(errors.label)}
                 />
               </label>
               <fieldset className="space-y-2">
@@ -153,33 +213,47 @@ export default function OnboardingPage() {
                   ))}
                 </div>
               </fieldset>
-              {error ? <p className="text-sm text-[#B45309]">{error}</p> : null}
               <button className="samba-btn w-full" disabled={busy} type="submit">
                 {busy ? "Creating…" : "Create couple"}
               </button>
             </form>
           ) : (
-            <form onSubmit={onJoin} className="mt-6 space-y-4">
+            <form onSubmit={onJoin} className="mt-6 space-y-4" noValidate>
               <label className="block space-y-1.5">
-                <span className="text-sm font-medium">Invite code</span>
+                <span
+                  className={`text-sm font-medium ${errors.code ? "samba-field-error" : ""}`}
+                >
+                  {errors.code ? errors.code : "Invite code"}
+                </span>
                 <input
-                  className="samba-input uppercase tracking-[0.2em]"
+                  className={`samba-input uppercase tracking-[0.2em] ${errors.code ? "samba-input-error" : ""}`}
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    clearField("code");
+                  }}
                   placeholder="ABCD1234"
                   required
+                  aria-invalid={Boolean(errors.code)}
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="text-sm font-medium">Your label</span>
+                <span
+                  className={`text-sm font-medium ${errors.label ? "samba-field-error" : ""}`}
+                >
+                  {errors.label ? errors.label : "Your label"}
+                </span>
                 <input
-                  className="samba-input"
+                  className={`samba-input ${errors.label ? "samba-input-error" : ""}`}
                   value={label}
-                  onChange={(e) => setLabel(e.target.value)}
+                  onChange={(e) => {
+                    setLabel(e.target.value);
+                    clearField("label");
+                  }}
                   placeholder={me?.user.displayName ?? "Your name in chat"}
+                  aria-invalid={Boolean(errors.label)}
                 />
               </label>
-              {error ? <p className="text-sm text-[#B45309]">{error}</p> : null}
               <button className="samba-btn w-full" disabled={busy} type="submit">
                 {busy ? "Joining…" : "Join couple"}
               </button>
