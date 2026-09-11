@@ -90,17 +90,18 @@ h3,
   justify-content: center;
   gap: 0.5rem;
   border-radius: 9999px;
-  border: 1px solid color-mix(in srgb, var(--samba-accent) 70%, #b8941a);
-  background: var(--samba-accent);
-  color: var(--samba-ink);
+  border: 1px solid var(--samba-ink);
+  background: var(--samba-ink);
+  color: #fffdf7;
   padding: 0.7rem 1.35rem;
   font-weight: 700;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .samba-btn:hover {
-  background: var(--samba-accent-soft);
-  border-color: var(--samba-accent);
+  background: color-mix(in srgb, var(--samba-ink) 82%, var(--samba-accent));
+  border-color: color-mix(in srgb, var(--samba-ink) 82%, var(--samba-accent));
+  color: #fffdf7;
 }
 
 .samba-btn:disabled {
@@ -294,5 +295,31 @@ h3,
 .samba-signal-art {
   animation: samba-signal-float 2.4s ease-in-out infinite;
 }
+
+@keyframes samba-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes samba-attach-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.samba-spin {
+  animation: samba-spin 0.75s linear infinite;
+}
+
+.samba-attach-toolbar {
+  animation: samba-attach-in 0.22s ease-out both;
+}
+
 
 

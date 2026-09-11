@@ -39,7 +39,7 @@ export function AppNav({ coupleName }: { coupleName?: string }) {
                 href={link.href}
                 className={`rounded-full px-3 py-1.5 text-sm transition ${
                   active
-                    ? "border border-[color:var(--samba-accent)] bg-[color:var(--samba-accent)] font-semibold text-[color:var(--samba-ink)]"
+                    ? "border border-[color:var(--samba-ink)] bg-[color:var(--samba-ink)] font-semibold text-[#FFFDF7]"
                     : "border border-transparent text-[color:var(--samba-muted)] hover:border-[color:var(--samba-border)] hover:text-[color:var(--samba-ink)]"
                 }`}
               >

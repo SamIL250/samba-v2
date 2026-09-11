@@ -56,7 +56,7 @@ export function AppBottomNav() {
                 <span
                   className={`relative flex h-9 w-9 items-center justify-center rounded-full ${
                     active
-                      ? "bg-[color:var(--samba-accent)]"
+                      ? "bg-[color:var(--samba-ink)] text-[#FFFDF7]"
                       : "bg-transparent"
                   }`}
                 >

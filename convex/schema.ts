@@ -67,6 +67,8 @@ export default defineSchema({
     type: v.union(
       v.literal("text"),
       v.literal("image"),
+      v.literal("audio"),
+      v.literal("file"),
       v.literal("system"),
       v.literal("game_share"),
     ),

@@ -125,3 +125,32 @@ export const sendImage = mutation({
     });
   },
 });
+
+export const sendMedia = mutation({
+  args: {
+    conversationId: v.id("conversations"),
+    mediaId: v.id("mediaAssets"),
+    kind: v.union(v.literal("image"), v.literal("audio"), v.literal("file")),
+    caption: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+    const { user } = await requireCoupleMember(ctx, conversation.coupleId);
+
+    const media = await ctx.db.get(args.mediaId);
+    if (!media || media.coupleId !== conversation.coupleId) {
+      throw new Error("Invalid media");
+    }
+
+    return await ctx.db.insert("messages", {
+      conversationId: conversation._id,
+      coupleId: conversation.coupleId,
+      senderId: user._id,
+      type: args.kind,
+      body: args.caption?.trim() || undefined,
+      mediaId: media._id,
+      createdAt: Date.now(),
+    });
+  },
+});

@@ -89,7 +89,7 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
         className={
           isThread
             ? "p-0"
-            : "mx-auto max-w-5xl px-4 py-6 pb-28 md:pb-24"
+            : "mx-auto w-full max-w-5xl px-4 py-6 pb-28 md:pb-24"
         }
       >
         {children}

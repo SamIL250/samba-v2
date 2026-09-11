@@ -58,7 +58,7 @@ export default function MessagesHubPage() {
   const firstName = partnerName.split(" ")[0] ?? partnerName;
 
   return (
-    <div className="samba-fade-up mx-auto max-w-lg space-y-6">
+    <div className="samba-fade-up mx-auto w-full max-w-lg space-y-6">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--samba-accent)]">
           Between you two

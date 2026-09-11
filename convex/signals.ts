@@ -63,9 +63,13 @@ export const inbox = query({
           const previewBody =
             latest.type === "image"
               ? "Sent a photo"
-              : latest.type === "game_share"
-                ? "Shared a game"
-                : (latest.body ?? "New message");
+              : latest.type === "audio"
+                ? "Sent a voice note"
+                : latest.type === "file"
+                  ? "Sent a file"
+                  : latest.type === "game_share"
+                    ? "Shared a game"
+                    : (latest.body ?? "New message");
           lastMessage = {
             body: previewBody,
             createdAt: latest.createdAt,
