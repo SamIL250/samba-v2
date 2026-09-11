@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --samba-accent: #e4b429;
+  --samba-accent-soft: #f0c94a;
+  --samba-glow: #f8e7a8;
+  --samba-surface: #faf9f6;
+  --samba-ink: #1a1714;
+  --samba-border: #e4e1db;
+  --samba-border-strong: #d4d0c8;
+  --samba-muted: #6b6560;
+  --samba-gradient: linear-gradient(160deg, #fffdf7 0%, #faf6ee 45%, #f3efe6 100%);
+  --background: #faf9f6;
+  --foreground: #1a1714;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+@keyframes samba-fall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(420deg);
+    opacity: 0;
+  }
+}
+
+@keyframes samba-spark {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes samba-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.samba-fade-up {
+  animation: samba-fade-up 0.55s ease-out both;
+}
+
+.samba-spark {
+  animation: samba-spark 1.2s ease-in-out infinite;
+}
+
+.samba-panel {
+  border: 1px solid var(--samba-border);
+  background: #ffffff;
+  border-radius: 1.75rem;
+}
+
+.samba-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--samba-accent) 70%, #b8941a);
+  background: var(--samba-accent);
+  color: var(--samba-ink);
+  padding: 0.7rem 1.35rem;
+  font-weight: 700;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.samba-btn:hover {
+  background: var(--samba-accent-soft);
+  border-color: var(--samba-accent);
+}
+
+.samba-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.samba-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--samba-border);
+  padding: 0.7rem 1.35rem;
+  font-weight: 600;
+  color: var(--samba-ink);
+  background: #ffffff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.samba-btn-ghost:hover {
+  border-color: var(--samba-border-strong);
+  background: var(--samba-surface);
+}
+
+.samba-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid var(--samba-border);
+  background: #ffffff;
+  padding: 0.85rem 1rem;
+  color: var(--samba-ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.samba-input:focus {
+  border-color: var(--samba-accent);
+}
+
+.samba-btn-on-oval {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: #ffffff;
+  color: var(--samba-ink);
+  padding: 0.7rem 1.35rem;
+  font-weight: 700;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.samba-btn-on-oval:hover {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.samba-btn-ghost-on-oval {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  padding: 0.7rem 1.35rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.samba-btn-ghost-on-oval:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Right-side oval: rises from the bottom, spans to ~30% from the left (~70% coverage) */
+.samba-hero-oval {
+  background: #f0b060;
+  clip-path: ellipse(56% 85% at 80% 60%);
+}
+
+.samba-hero-oval-clip {
+  clip-path: ellipse(56% 85% at 80% 60%);
+}
+
+@media (max-width: 768px) {
+  .samba-hero-oval,
+  .samba-hero-oval-clip {
+    clip-path: ellipse(88% 75% at 78% 78%);
+  }
+}
+

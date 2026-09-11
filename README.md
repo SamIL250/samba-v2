@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Samba
 
-## Getting Started
+Couple social space built with **Next.js**, **Convex**, **Clerk**, and **Cloudinary**.
 
-First, run the development server:
+One account seat pair: create a couple, invite your partner with a link/code, then chat, play Would You Rather, share moments (private or public), and browse the Public Wall.
+
+## Setup
+
+1. **Install**
+
+```bash
+npm install
+```
+
+2. **Clerk** — create an app at [dashboard.clerk.com](https://dashboard.clerk.com), enable the Convex integration, copy keys.
+
+3. **Convex**
+
+```bash
+npx convex dev
+```
+
+Set on the Convex dashboard (or CLI):
+
+```bash
+npx convex env set CLERK_JWT_ISSUER_DOMAIN "https://YOUR_CLERK_FRONTEND_API.clerk.accounts.dev"
+npx convex env set CLOUDINARY_CLOUD_NAME "..."
+npx convex env set CLOUDINARY_API_KEY "..."
+npx convex env set CLOUDINARY_API_SECRET "..."
+```
+
+4. **Env** — copy `.env.local.example` to `.env.local` and fill values (`NEXT_PUBLIC_CONVEX_URL` is written by `convex dev`).
+
+5. **Run**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# in another terminal, if not already running:
+npx convex dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Next.js app |
+| `npm run build` | Production build |
+| `npx convex dev` | Sync Convex backend + codegen |
 
-## Learn More
+## App routes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/` — marketing
+- `/onboarding` — create or join couple
+- `/invite/[code]` — partner invite
+- `/home` — couple hub
+- `/chat` — private DM + images
+- `/play` — Would You Rather
+- `/moments` — private moments + public toggle
+- `/wall` — public feed
