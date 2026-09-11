@@ -13,6 +13,7 @@ import {
 } from "@/lib/chatBackgrounds";
 import { THEMES, type ThemeKey } from "@/lib/theme";
 import { CoupleSkeleton } from "@/components/skeletons";
+import { PushSettingsCard } from "@/components/PushSettingsCard";
 
 function toDateInput(value?: number) {
   if (!value) return "";
@@ -141,6 +142,8 @@ export default function CoupleProfilePage() {
           Names, theme, and the details that make this space yours.
         </p>
       </div>
+
+      <PushSettingsCard />
 
       <form onSubmit={onSave} className="samba-panel space-y-5 p-5 sm:p-6">
         <label className="block space-y-1.5">

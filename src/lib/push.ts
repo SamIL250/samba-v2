@@ -17,3 +17,44 @@ export function pushSupported() {
     "Notification" in window
   );
 }
+
+export async function subscribeBrowserPush(
+  publicKey: string,
+  save: (args: {
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+    userAgent?: string;
+  }) => Promise<unknown>,
+) {
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+    });
+  }
+
+  const json = subscription.toJSON();
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+    throw new Error("Incomplete push subscription");
+  }
+
+  await save({
+    endpoint: json.endpoint,
+    p256dh: json.keys.p256dh,
+    auth: json.keys.auth,
+    userAgent: navigator.userAgent,
+  });
+}
+
+export const PUSH_OPTIN_DISMISS_KEY = "samba-push-optin-dismissed-at";
+
+export function clearPushOptInDismiss() {
+  try {
+    localStorage.removeItem(PUSH_OPTIN_DISMISS_KEY);
+  } catch {
+    // ignore
+  }
+}

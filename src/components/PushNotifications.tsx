@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { Bell01, XClose } from "@untitledui/icons";
 import { api } from "@/lib/api";
-import { pushSupported, urlBase64ToUint8Array } from "@/lib/push";
+import {
+  PUSH_OPTIN_DISMISS_KEY,
+  pushSupported,
+  subscribeBrowserPush,
+} from "@/lib/push";
 
-const DISMISS_KEY = "samba-push-optin-dismissed-at";
 const DISMISS_MS = 1000 * 60 * 60 * 24 * 7;
 
 function wasDismissedRecently() {
   try {
-    const raw = localStorage.getItem(DISMISS_KEY);
+    const raw = localStorage.getItem(PUSH_OPTIN_DISMISS_KEY);
     if (!raw) return false;
     const at = Number(raw);
     return Number.isFinite(at) && Date.now() - at < DISMISS_MS;
@@ -27,37 +30,6 @@ function isStandalone() {
     "standalone" in navigator &&
     Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
   return mq || ios;
-}
-
-async function ensureSubscription(
-  publicKey: string,
-  save: (args: {
-    endpoint: string;
-    p256dh: string;
-    auth: string;
-    userAgent?: string;
-  }) => Promise<unknown>,
-) {
-  const registration = await navigator.serviceWorker.ready;
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-    });
-  }
-
-  const json = subscription.toJSON();
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-    throw new Error("Incomplete push subscription");
-  }
-
-  await save({
-    endpoint: json.endpoint,
-    p256dh: json.keys.p256dh,
-    auth: json.keys.auth,
-    userAgent: navigator.userAgent,
-  });
 }
 
 /**
@@ -77,16 +49,20 @@ export function PushNotifications() {
 
   useEffect(() => {
     if (!pushSupported()) return;
-    if (!publicKey) return;
 
     let cancelled = false;
 
     async function sync() {
+      if (vapidPublicKey === undefined && !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+        return;
+      }
+      if (!publicKey) return;
+
       if (Notification.permission === "granted") {
         try {
-          await ensureSubscription(publicKey!, saveSubscription);
+          await subscribeBrowserPush(publicKey, saveSubscription);
         } catch {
-          // Soft fail — user can retry via the banner.
+          // Soft fail — user can retry via the banner / Couple settings.
         }
         return;
       }
@@ -96,7 +72,7 @@ export function PushNotifications() {
       if (!cancelled) {
         window.setTimeout(() => {
           if (!cancelled) setShowOptIn(true);
-        }, isStandalone() ? 1200 : 2500);
+        }, isStandalone() ? 800 : 1500);
       }
     }
 
@@ -104,7 +80,7 @@ export function PushNotifications() {
     return () => {
       cancelled = true;
     };
-  }, [publicKey, saveSubscription]);
+  }, [publicKey, vapidPublicKey, saveSubscription]);
 
   async function onEnable() {
     if (!publicKey) {
@@ -117,12 +93,12 @@ export function PushNotifications() {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setError(
-          "Notifications stayed off — you can enable them in settings anytime.",
+          "Notifications stayed off — you can enable them in Couple settings anytime.",
         );
         setBusy(false);
         return;
       }
-      await ensureSubscription(publicKey, saveSubscription);
+      await subscribeBrowserPush(publicKey, saveSubscription);
       setShowOptIn(false);
     } catch (err) {
       setError(
@@ -136,7 +112,7 @@ export function PushNotifications() {
   function dismiss() {
     setShowOptIn(false);
     try {
-      localStorage.setItem(DISMISS_KEY, String(Date.now()));
+      localStorage.setItem(PUSH_OPTIN_DISMISS_KEY, String(Date.now()));
     } catch {
       // ignore
     }
