@@ -22,7 +22,10 @@ export default defineSchema({
     name: v.string(),
     slug: v.string(),
     createdBy: v.id("users"),
+    /** @deprecated prefer datingStartedAt — kept for older couples */
     anniversaryAt: v.optional(v.number()),
+    /** When the couple started dating — drives Day N + annual anniversary */
+    datingStartedAt: v.optional(v.number()),
     theme: themeValidator,
     chatBackground: v.optional(chatBackgroundValidator),
     status: v.union(v.literal("pending_partner"), v.literal("active")),
@@ -37,6 +40,7 @@ export default defineSchema({
     role: v.union(v.literal("creator"), v.literal("partner")),
     partnerLabel: v.string(),
     color: v.string(),
+    birthDateAt: v.optional(v.number()),
     joinedAt: v.number(),
   })
     .index("by_user", ["userId"])

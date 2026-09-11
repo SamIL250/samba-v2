@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft } from "@untitledui/icons";
 import { api } from "@/lib/api";
@@ -22,6 +22,13 @@ function toDateInput(value?: number) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function parseDateInput(value: string): number | undefined {
+  if (!value) return undefined;
+  const [y, m, d] = value.split("-").map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d, 12, 0, 0, 0).getTime();
+}
+
 export default function CoupleProfilePage() {
   const couple = useQuery(api.couples.myCouple);
   const me = useQuery(api.users.me);
@@ -30,20 +37,33 @@ export default function CoupleProfilePage() {
   const [coupleName, setCoupleName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [partnerLabel, setPartnerLabel] = useState("");
-  const [anniversary, setAnniversary] = useState("");
+  const [datingStarted, setDatingStarted] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [theme, setTheme] = useState<ThemeKey>("ocean");
   const [chatBackground, setChatBackground] =
     useState<ChatBackgroundKey>("none");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hydratedFor = useRef<string | null>(null);
 
   useEffect(() => {
     if (!couple || !me) return;
+    const key = `${couple.couple._id}:${me.user._id}`;
+    // Only hydrate once per couple session — live presence updates were
+    // resetting the form mid-edit and snapping the dating date back.
+    if (hydratedFor.current === key) return;
+    hydratedFor.current = key;
+
     setCoupleName(couple.couple.name);
     setDisplayName(me.user.displayName);
     setPartnerLabel(couple.membership.partnerLabel);
-    setAnniversary(toDateInput(couple.couple.anniversaryAt));
+    setDatingStarted(
+      toDateInput(
+        couple.couple.datingStartedAt ?? couple.couple.anniversaryAt,
+      ),
+    );
+    setBirthDate(toDateInput(couple.membership.birthDateAt));
     setTheme((couple.couple.theme ?? "ocean") as ThemeKey);
     const bg = couple.couple.chatBackground ?? "none";
     setChatBackground(isChatBackgroundKey(bg) ? bg : "none");
@@ -61,9 +81,8 @@ export default function CoupleProfilePage() {
         partnerLabel,
         theme,
         chatBackground,
-        anniversaryAt: anniversary
-          ? new Date(`${anniversary}T12:00:00`).getTime()
-          : undefined,
+        datingStartedAt: parseDateInput(datingStarted),
+        birthDateAt: parseDateInput(birthDate),
       });
       setSaved(true);
       window.setTimeout(() => setSaved(false), 2200);
@@ -159,13 +178,29 @@ export default function CoupleProfilePage() {
         </label>
 
         <label className="block space-y-1.5">
-          <span className="text-sm font-medium">Anniversary</span>
+          <span className="text-sm font-medium">Started dating</span>
           <input
             type="date"
             className="samba-input"
-            value={anniversary}
-            onChange={(e) => setAnniversary(e.target.value)}
+            value={datingStarted}
+            onChange={(e) => setDatingStarted(e.target.value)}
           />
+          <p className="text-xs text-[color:var(--samba-muted)]">
+            Powers Day N on Home and your annual anniversary celebration.
+          </p>
+        </label>
+
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Your birthday</span>
+          <input
+            type="date"
+            className="samba-input"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+          />
+          <p className="text-xs text-[color:var(--samba-muted)]">
+            Each of you sets your own — Home will celebrate when it’s the day.
+          </p>
         </label>
 
         {partner?.user ? (
@@ -178,6 +213,9 @@ export default function CoupleProfilePage() {
             </p>
             <p className="text-xs text-[color:var(--samba-muted)]">
               {partner.user.displayName}
+              {partner.membership.birthDateAt
+                ? ` · birthday ${toDateInput(partner.membership.birthDateAt)}`
+                : " · birthday not set yet"}
             </p>
           </div>
         ) : (

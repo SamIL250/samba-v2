@@ -98,6 +98,25 @@ export function daysTogether(from: number, now = Date.now()): number {
   return Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1);
 }
 
+/** True when today matches the month/day of `dateAt` (local time). */
+export function isAnniversaryToday(dateAt: number, now = Date.now()): boolean {
+  const d = new Date(dateAt);
+  const n = new Date(now);
+  return d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
+/** Whole years since `dateAt` as of today (0 if before first anniversary). */
+export function yearsSince(dateAt: number, now = Date.now()): number {
+  const d = new Date(dateAt);
+  const n = new Date(now);
+  let years = n.getFullYear() - d.getFullYear();
+  const before =
+    n.getMonth() < d.getMonth() ||
+    (n.getMonth() === d.getMonth() && n.getDate() < d.getDate());
+  if (before) years -= 1;
+  return Math.max(0, years);
+}
+
 export function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
   if (diff < 60_000) return "just now";

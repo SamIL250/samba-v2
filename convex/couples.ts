@@ -279,10 +279,12 @@ export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
     anniversaryAt: v.optional(v.number()),
+    datingStartedAt: v.optional(v.number()),
     theme: v.optional(themeValidator),
     chatBackground: v.optional(chatBackgroundValidator),
     partnerLabel: v.optional(v.string()),
     displayName: v.optional(v.string()),
+    birthDateAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { user, membership, couple } = await requireMyCouple(ctx);
@@ -293,6 +295,11 @@ export const updateProfile = mutation({
       patch.name = name;
     }
     if (args.anniversaryAt !== undefined) patch.anniversaryAt = args.anniversaryAt;
+    if (args.datingStartedAt !== undefined) {
+      patch.datingStartedAt = args.datingStartedAt;
+      // Keep anniversaryAt in sync for older clients using that field
+      patch.anniversaryAt = args.datingStartedAt;
+    }
     if (args.theme !== undefined) patch.theme = args.theme;
     if (args.chatBackground !== undefined) {
       patch.chatBackground = args.chatBackground;
@@ -304,6 +311,9 @@ export const updateProfile = mutation({
       const partnerLabel = args.partnerLabel.trim();
       if (!partnerLabel) throw new Error("Your label can’t be empty");
       await ctx.db.patch(membership._id, { partnerLabel });
+    }
+    if (args.birthDateAt !== undefined) {
+      await ctx.db.patch(membership._id, { birthDateAt: args.birthDateAt });
     }
     if (args.displayName !== undefined) {
       const displayName = args.displayName.trim();
