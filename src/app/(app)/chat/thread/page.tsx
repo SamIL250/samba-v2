@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type KeyboardEvent,
 } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
@@ -28,6 +29,8 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 import { formatRelative } from "@/lib/theme";
 
 type MediaKind = "image" | "audio" | "file";
+
+const COMPOSER_MAX_HEIGHT = 120;
 
 type ReplyDraft = {
   id: Id<"messages">;
@@ -71,11 +74,21 @@ export default function ChatThreadPage() {
   const chunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages?.length]);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const next = Math.min(el.scrollHeight, COMPOSER_MAX_HEIGHT);
+    el.style.height = `${next}px`;
+    el.style.overflowY =
+      el.scrollHeight > COMPOSER_MAX_HEIGHT ? "auto" : "hidden";
+  }, [text]);
 
   useEffect(() => {
     return () => {
@@ -183,6 +196,14 @@ export default function ChatThreadPage() {
     typingTimer.current = setTimeout(() => {
       void clearTyping({});
     }, 2500);
+  }
+
+  function onComposerKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key !== "Enter" || e.shiftKey) return;
+    e.preventDefault();
+    if (!text.trim() || uploading) return;
+    const form = e.currentTarget.form;
+    if (form) form.requestSubmit();
   }
 
   async function uploadAndSend(file: File, kind: MediaKind) {
@@ -401,7 +422,7 @@ export default function ChatThreadPage() {
                     />
                   ) : null}
 
-                  <div className={`relative max-w-[min(78%,24rem)]`}>
+                  <div className="relative min-w-0 max-w-[min(78%,24rem)]">
                     <button
                       type="button"
                       className={`absolute top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 opacity-0 shadow-sm transition group-hover:opacity-100 focus:opacity-100 ${
@@ -455,11 +476,11 @@ export default function ChatThreadPage() {
                     ) : null}
 
                     <div
-                      className={`${
+                      className={`min-w-0 overflow-hidden ${
                         message.type === "image" &&
                         !message.body &&
                         !message.deletedForEveryone
-                          ? "overflow-hidden p-1"
+                          ? "p-1"
                           : "px-3 py-2"
                       } ${
                         mine
@@ -554,7 +575,7 @@ export default function ChatThreadPage() {
                           ) : null}
 
                           {message.body ? (
-                            <p className="whitespace-pre-wrap pr-11 text-[15px] leading-snug">
+                            <p className="break-words whitespace-pre-wrap [overflow-wrap:anywhere] pr-11 text-[15px] leading-snug">
                               {message.body}
                             </p>
                           ) : null}
@@ -699,10 +720,10 @@ export default function ChatThreadPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={onSend} className="flex items-center gap-2">
+            <form onSubmit={onSend} className="flex items-end gap-2">
               <button
                 type="button"
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
+                className="relative mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
                 aria-label={attachOpen ? "Close attach menu" : "Attach"}
                 aria-expanded={attachOpen}
                 disabled={uploading}
@@ -720,11 +741,13 @@ export default function ChatThreadPage() {
                 )}
               </button>
 
-              <input
+              <textarea
                 ref={inputRef}
-                className="samba-input"
+                className="samba-input samba-composer-input min-h-[2.75rem] flex-1 resize-none overflow-hidden"
+                rows={1}
                 value={text}
                 onChange={(e) => onTyping(e.target.value)}
+                onKeyDown={onComposerKeyDown}
                 placeholder={
                   replyTo ? "Write your reply…" : "Write to your person…"
                 }
@@ -734,7 +757,7 @@ export default function ChatThreadPage() {
 
               {text.trim() ? (
                 <button
-                  className="samba-btn shrink-0 px-3.5 py-3"
+                  className="samba-btn mb-0.5 shrink-0 px-3.5 py-3"
                   type="submit"
                   disabled={uploading}
                   aria-label="Send"
@@ -744,7 +767,7 @@ export default function ChatThreadPage() {
               ) : (
                 <button
                   type="button"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
+                  className="mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
                   aria-label="Record voice note"
                   disabled={uploading}
                   onClick={() => void startRecording()}
