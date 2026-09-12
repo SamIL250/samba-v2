@@ -39,10 +39,22 @@ const LINKS: {
   },
 ];
 
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--samba-ink)] px-1 text-[9px] font-bold text-[color:var(--samba-elevated)]">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 export function AppBottomNav() {
   const pathname = usePathname();
   const inbox = useQuery(api.signals.inbox);
-  const signalBadge = inbox?.unreadCount ?? 0;
+  const chatUnread = useQuery(api.chat.unreadCount);
+  const signalUnread = inbox?.unreadCount ?? 0;
+  const messageUnread = chatUnread?.unread ?? 0;
+  const chatBadge = messageUnread + signalUnread;
 
   return (
     <nav
@@ -59,7 +71,6 @@ export function AppBottomNav() {
           const active = match
             ? match(pathname)
             : pathname === href || pathname.startsWith(`${href}/`);
-          const showBadge = href === "/chat" && signalBadge > 0;
           return (
             <li key={href} className="flex-1">
               <Link
@@ -81,11 +92,7 @@ export function AppBottomNav() {
                     className="size-5"
                     strokeWidth={active ? 2.25 : 1.75}
                   />
-                  {showBadge ? (
-                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--samba-ink)] px-1 text-[9px] font-bold text-white">
-                      {signalBadge > 9 ? "9+" : signalBadge}
-                    </span>
-                  ) : null}
+                  {href === "/chat" ? <Badge count={chatBadge} /> : null}
                 </span>
                 {label}
               </Link>

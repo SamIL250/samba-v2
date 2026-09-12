@@ -84,6 +84,7 @@ export default function ChatThreadPage() {
   const getSignature = useAction(api.mediaActions.createUploadSignature);
   const heartbeat = useMutation(api.presence.heartbeat);
   const clearTyping = useMutation(api.presence.clearTyping);
+  const markRead = useMutation(api.chat.markRead);
   const updateProfile = useMutation(api.couples.updateProfile);
 
   const [text, setText] = useState("");
@@ -127,6 +128,18 @@ export default function ChatThreadPage() {
     if (!list) return;
     list.scrollTop = list.scrollHeight;
   }, [messages?.length]);
+
+  useEffect(() => {
+    if (!conversation?._id) return;
+    void markRead({ conversationId: conversation._id });
+  }, [conversation?._id, messages?.length, markRead]);
+
+  useEffect(() => {
+    return () => {
+      void clearTyping({});
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+    };
+  }, [clearTyping]);
 
   useEffect(() => {
     const el = inputRef.current;
@@ -213,14 +226,23 @@ export default function ChatThreadPage() {
     return () => document.removeEventListener("keydown", onKey);
   }, [lightbox]);
 
-  const partnerTyping = couple?.presence.find(
-    (p) =>
-      p.userId !== me?.user._id &&
-      p.typingInConversationId &&
-      conversation &&
-      p.typingInConversationId === conversation._id &&
-      Date.now() - p.lastSeenAt < 8_000,
+  const partnerTyping = Boolean(
+    couple?.presence.find((p) => {
+      if (p.userId === me?.user._id) return false;
+      if (!conversation || p.typingInConversationId !== conversation._id) {
+        return false;
+      }
+      const typedAt = p.typingUpdatedAt ?? p.lastSeenAt;
+      return Date.now() - typedAt < 8_000;
+    }),
   );
+
+  useEffect(() => {
+    if (!partnerTyping) return;
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+  }, [partnerTyping]);
 
   const partnerName =
     inbox?.partner?.partnerLabel ??
@@ -557,7 +579,18 @@ export default function ChatThreadPage() {
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold leading-tight">{partnerName}</p>
           <p className="text-[11px] text-[color:var(--samba-muted)]">
-            {partnerTyping ? "Typing…" : "Private chat"}
+            {partnerTyping ? (
+              <span className="inline-flex items-center gap-1 font-medium text-[color:var(--samba-accent)]">
+                typing
+                <span className="samba-typing-dots" aria-hidden>
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </span>
+            ) : (
+              "Private chat"
+            )}
           </p>
         </div>
 
@@ -971,6 +1004,24 @@ export default function ChatThreadPage() {
               );
             })
           )}
+          {partnerTyping ? (
+            <div
+              className="flex justify-start"
+              aria-live="polite"
+              aria-label={`${partnerName} is typing`}
+            >
+              <div
+                className="samba-typing-bubble inline-flex items-center gap-1 rounded-[1.15rem] rounded-bl-md px-3.5 py-2.5"
+                style={{ background: "var(--samba-bubble-in)" }}
+              >
+                <span className="samba-typing-dots samba-typing-dots-lg" aria-hidden>
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </div>
+            </div>
+          ) : null}
           <div ref={bottomRef} />
         </div>
       </div>

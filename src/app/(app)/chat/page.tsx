@@ -11,6 +11,7 @@ import { ChatHubSkeleton } from "@/components/skeletons";
 
 export default function MessagesHubPage() {
   const inbox = useQuery(api.signals.inbox);
+  const chatUnread = useQuery(api.chat.unreadCount);
   const sendSignal = useMutation(api.signals.send);
   const markSeen = useMutation(api.signals.markSeen);
   const removeSignal = useMutation(api.signals.remove);
@@ -18,6 +19,7 @@ export default function MessagesHubPage() {
   const [removingId, setRemovingId] = useState<Id<"softSignals"> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const messageUnread = chatUnread?.unread ?? 0;
 
   useEffect(() => {
     if (!inbox?.unreadCount) return;
@@ -113,16 +115,28 @@ export default function MessagesHubPage() {
                 </time>
               ) : null}
             </div>
-            <p className="mt-0.5 truncate text-sm text-[color:var(--samba-muted)]">
+            <p
+              className={`mt-0.5 truncate text-sm ${
+                messageUnread > 0
+                  ? "font-semibold text-[color:var(--samba-ink)]"
+                  : "text-[color:var(--samba-muted)]"
+              }`}
+            >
               {inbox.lastMessage
                 ? `${inbox.lastMessage.mine ? "You: " : ""}${inbox.lastMessage.body}`
                 : "Say something soft…"}
             </p>
           </div>
-          <MessageChatCircle
-            className="size-5 shrink-0 text-[color:var(--samba-muted)]"
-            strokeWidth={1.75}
-          />
+          {messageUnread > 0 ? (
+            <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--samba-ink)] px-1.5 text-[11px] font-bold text-[color:var(--samba-elevated)]">
+              {messageUnread > 99 ? "99+" : messageUnread}
+            </span>
+          ) : (
+            <MessageChatCircle
+              className="size-5 shrink-0 text-[color:var(--samba-muted)]"
+              strokeWidth={1.75}
+            />
+          )}
         </Link>
       ) : (
         <div className="rounded-[1.35rem] border border-dashed border-[color:var(--samba-border)] bg-[color:var(--samba-surface)] px-4 py-6 text-center text-sm text-[color:var(--samba-muted)]">

@@ -73,6 +73,8 @@ export default defineSchema({
     coupleId: v.id("couples"),
     type: v.literal("couple_dm"),
     createdAt: v.number(),
+    /** Per-user last-read cursor (userId string → timestamp). */
+    lastReadAtByUser: v.optional(v.record(v.string(), v.number())),
   }).index("by_couple", ["coupleId"]),
 
   messages: defineTable({
@@ -171,6 +173,8 @@ export default defineSchema({
     userId: v.id("users"),
     lastSeenAt: v.number(),
     typingInConversationId: v.optional(v.id("conversations")),
+    /** Freshness for typing indicator (independent of online heartbeat). */
+    typingUpdatedAt: v.optional(v.number()),
   })
     .index("by_couple", ["coupleId"])
     .index("by_couple_user", ["coupleId", "userId"]),

@@ -26,12 +26,14 @@ import {
 
 export default function HomePage() {
   const data = useQuery(api.couples.myCouple);
+  const chatUnread = useQuery(api.chat.unreadCount);
   const regenerateInvite = useMutation(api.couples.regenerateInvite);
   const setCurrentMood = useMutation(api.couples.setCurrentMood);
   const [inviteBusy, setInviteBusy] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [moodBusy, setMoodBusy] = useState(false);
   const [moodTab, setMoodTab] = useState<MoodGender>("female");
+  const messageUnread = chatUnread?.unread ?? 0;
 
   const datingStart = useMemo(() => {
     if (!data?.couple) return null;
@@ -340,24 +342,32 @@ export default function HomePage() {
             href: "/chat",
             title: "Chat",
             body: "Whisper, send photos, leave little notes.",
+            badge: messageUnread,
           },
           {
             href: "/play",
             title: "Play",
             body: "Truth or Dare and more — play together.",
+            badge: 0,
           },
           {
             href: "/moments",
             title: "Moments",
             body: "Keep them private, or publish to the Wall.",
+            badge: 0,
           },
         ].map((card, i) => (
           <Link
             key={card.href}
             href={card.href}
-            className="samba-fade-up group samba-panel rounded-[1.5rem] p-6 transition hover:border-[color:var(--samba-border-strong)]"
+            className="samba-fade-up group samba-panel relative rounded-[1.5rem] p-6 transition hover:border-[color:var(--samba-border-strong)]"
             style={{ animationDelay: `${0.08 * (i + 1)}s` }}
           >
+            {card.badge > 0 ? (
+              <span className="absolute right-4 top-4 flex h-6 min-w-6 items-center justify-center rounded-full bg-[color:var(--samba-ink)] px-1.5 text-xs font-bold text-[color:var(--samba-elevated)]">
+                {card.badge > 99 ? "99+" : card.badge}
+              </span>
+            ) : null}
             <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight group-hover:text-[color:var(--samba-accent)]">
               {card.title}
             </h2>

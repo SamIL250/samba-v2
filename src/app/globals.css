@@ -350,6 +350,53 @@ h3,
   animation: samba-attach-in 0.22s ease-out both;
 }
 
+@keyframes samba-typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.samba-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.samba-typing-dots > span {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: samba-typing-bounce 1.2s ease-in-out infinite;
+}
+
+.samba-typing-dots > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.samba-typing-dots > span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.samba-typing-dots-lg > span {
+  width: 7px;
+  height: 7px;
+  background: var(--samba-muted);
+}
+
+.samba-typing-bubble {
+  min-width: 3.25rem;
+}
+
+
 @keyframes samba-install-pulse {
   0%,
   100% {

@@ -4,6 +4,7 @@ import { requireCoupleMember, requireMyCouple } from "./lib/auth";
 
 export const heartbeat = mutation({
   args: {
+    /** When set, marks you as typing in that conversation. Omit to only refresh online. */
     typingInConversationId: v.optional(v.id("conversations")),
   },
   handler: async (ctx, args) => {
@@ -24,10 +25,18 @@ export const heartbeat = mutation({
 
     const now = Date.now();
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        lastSeenAt: now,
-        typingInConversationId: args.typingInConversationId,
-      });
+      const patch: {
+        lastSeenAt: number;
+        typingInConversationId?: typeof args.typingInConversationId;
+        typingUpdatedAt?: number;
+      } = { lastSeenAt: now };
+      // Only touch typing when explicitly typing — CoupleGate online pings
+      // must not wipe an in-progress typing state.
+      if (args.typingInConversationId) {
+        patch.typingInConversationId = args.typingInConversationId;
+        patch.typingUpdatedAt = now;
+      }
+      await ctx.db.patch(existing._id, patch);
       return existing._id;
     }
 
@@ -36,6 +45,7 @@ export const heartbeat = mutation({
       userId: user._id,
       lastSeenAt: now,
       typingInConversationId: args.typingInConversationId,
+      typingUpdatedAt: args.typingInConversationId ? now : undefined,
     });
   },
 });
@@ -53,6 +63,7 @@ export const clearTyping = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         typingInConversationId: undefined,
+        typingUpdatedAt: undefined,
         lastSeenAt: Date.now(),
       });
     }

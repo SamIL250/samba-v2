@@ -346,3 +346,72 @@ export const deleteForEveryone = mutation({
     return { ok: true };
   },
 });
+
+/** Mark the couple DM as read up to now (clears unread badge). */
+export const markRead = mutation({
+  args: {
+    conversationId: v.optional(v.id("conversations")),
+  },
+  handler: async (ctx, args) => {
+    const { user, couple } = await requireMyCouple(ctx);
+    const conversation = args.conversationId
+      ? await ctx.db.get(args.conversationId)
+      : await ctx.db
+          .query("conversations")
+          .withIndex("by_couple", (q) => q.eq("coupleId", couple._id))
+          .unique();
+    if (!conversation || conversation.coupleId !== couple._id) {
+      return { ok: false as const };
+    }
+    const prev = conversation.lastReadAtByUser ?? {};
+    await ctx.db.patch(conversation._id, {
+      lastReadAtByUser: {
+        ...prev,
+        [user._id]: Date.now(),
+      },
+    });
+    return { ok: true as const };
+  },
+});
+
+/** Unread partner messages in the couple DM (0 when caught up). */
+export const unreadCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { unread: 0 };
+
+    try {
+      const { user, couple } = await requireMyCouple(ctx);
+      const conversation = await ctx.db
+        .query("conversations")
+        .withIndex("by_couple", (q) => q.eq("coupleId", couple._id))
+        .unique();
+      if (!conversation) return { unread: 0 };
+
+      const lastRead =
+        conversation.lastReadAtByUser?.[user._id] ?? conversation.createdAt;
+
+      const recent = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation_createdAt", (q) =>
+          q.eq("conversationId", conversation._id),
+        )
+        .order("desc")
+        .take(80);
+
+      let unread = 0;
+      for (const message of recent) {
+        if (message.createdAt <= lastRead) break;
+        if (!message.senderId || message.senderId === user._id) continue;
+        if (message.type === "system") continue;
+        if (message.deletedForEveryoneAt) continue;
+        if ((message.deletedForUserIds ?? []).includes(user._id)) continue;
+        unread += 1;
+      }
+      return { unread };
+    } catch {
+      return { unread: 0 };
+    }
+  },
+});

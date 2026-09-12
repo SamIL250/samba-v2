@@ -76,26 +76,24 @@ export const THEMES = {
 export type ThemeKey = keyof typeof THEMES;
 export type ColorMode = "light" | "dark";
 
+type ThemePalette = {
+  accent: string;
+  accentSoft: string;
+  glow: string;
+  surface: string;
+  ink: string;
+  muted: string;
+  border: string;
+  bubbleIn: string;
+  bubbleOut: string;
+  bubbleOutText: string;
+  chatChrome: string;
+  elevated: string;
+  gradient: string;
+};
+
 /** Dark shells keep each accent family, but invert surface / ink. */
-const DARK_BY_THEME: Record<
-  ThemeKey,
-  Pick<
-    (typeof THEMES)[ThemeKey],
-    | "accent"
-    | "accentSoft"
-    | "glow"
-    | "surface"
-    | "ink"
-    | "muted"
-    | "border"
-    | "bubbleIn"
-    | "bubbleOut"
-    | "bubbleOutText"
-    | "chatChrome"
-    | "elevated"
-    | "gradient"
-  >
-> = {
+const DARK_BY_THEME: Record<ThemeKey, ThemePalette> = {
   ocean: {
     accent: "#E8C04A",
     accentSoft: "#C9A030",
