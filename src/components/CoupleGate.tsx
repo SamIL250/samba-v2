@@ -8,7 +8,7 @@ import { AppNav } from "./AppNav";
 import { AppBottomNav } from "./AppBottomNav";
 import { SoftSignalOverlay } from "./SoftSignalOverlay";
 import { TruthOrDareOverlay } from "./TruthOrDareOverlay";
-import { themeCssVars, type ThemeKey } from "@/lib/theme";
+import { themeCssVars, isColorMode, type ThemeKey } from "@/lib/theme";
 import { EnsureUser } from "./EnsureUser";
 import { AppShellSkeleton } from "@/components/skeletons";
 import { PushNotifications } from "@/components/PushNotifications";
@@ -59,10 +59,14 @@ function CoupleShell({ children }: { children: React.ReactNode }) {
   }
 
   const theme = (couple.couple.theme ?? "ocean") as ThemeKey;
-  const vars = themeCssVars(theme);
+  const colorMode = isColorMode(couple.couple.colorMode)
+    ? couple.couple.colorMode
+    : "light";
+  const vars = themeCssVars(theme, colorMode);
 
   return (
     <div
+      data-color-mode={colorMode}
       className={
         isThread
           ? "h-dvh overflow-hidden text-[color:var(--samba-ink)]"

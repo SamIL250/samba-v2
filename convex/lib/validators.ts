@@ -16,6 +16,11 @@ export const themeValidator = v.union(
   v.literal("midnight"),
 );
 
+export const colorModeValidator = v.union(
+  v.literal("light"),
+  v.literal("dark"),
+);
+
 export const chatBackgroundValidator = v.union(
   v.literal("none"),
   v.literal("dots"),

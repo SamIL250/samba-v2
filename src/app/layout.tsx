@@ -53,7 +53,7 @@ export const viewport: Viewport = {
     { media: "(display-mode: fullscreen)", color: "#FFFDF7" },
     { color: "#FFFDF7" },
   ],
-  colorScheme: "light",
+  colorScheme: "light dark",
   /** Helps Chrome/Android resize layout when the soft keyboard opens */
   interactiveWidget: "resizes-content",
   viewportFit: "cover",

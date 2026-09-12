@@ -52,7 +52,7 @@ export function GameModalShell({
       aria-modal="true"
       aria-label={label}
     >
-      <div className="samba-signal-card-in my-2 w-full max-w-md rounded-[1.75rem] border border-[color:var(--samba-border)] bg-white p-5 sm:my-0 sm:p-6">
+      <div className="samba-signal-card-in my-2 w-full max-w-md rounded-[1.75rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] p-5 sm:my-0 sm:p-6">
         {children}
       </div>
     </div>

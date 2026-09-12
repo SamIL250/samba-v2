@@ -68,7 +68,7 @@ export function ChatHubSkeleton() {
       aria-label="Loading messages"
     >
       <PageHeaderSkeleton />
-      <div className="flex items-center gap-3 rounded-[1.35rem] border border-[color:var(--samba-border)] bg-white px-4 py-3.5">
+      <div className="flex items-center gap-3 rounded-[1.35rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-4 py-3.5">
         <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
         <div className="min-w-0 flex-1 space-y-2">
           <Skeleton className="h-4 w-32 rounded-md" />
@@ -87,7 +87,7 @@ export function ChatHubSkeleton() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="flex items-center gap-3 rounded-2xl border border-[color:var(--samba-border)] bg-white px-3 py-3"
+            className="flex items-center gap-3 rounded-2xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-3 py-3"
           >
             <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
             <div className="min-w-0 flex-1 space-y-2">
@@ -188,7 +188,7 @@ export function WallSkeleton() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="overflow-hidden rounded-[1.35rem] border border-[color:var(--samba-border)] bg-white"
+            className="overflow-hidden rounded-[1.35rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)]"
           >
             <div className="flex items-center gap-3 px-4 py-3">
               <Skeleton className="h-10 w-10 rounded-full" />
@@ -335,7 +335,7 @@ export function AppShellSkeleton() {
 export function OnboardingSkeleton() {
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-white px-4 py-12"
+      className="flex min-h-screen items-center justify-center bg-[color:var(--samba-elevated)] px-4 py-12"
       aria-busy="true"
       aria-label="Loading"
     >
@@ -363,7 +363,7 @@ export function OnboardingSkeleton() {
 export function InviteSkeleton() {
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-white px-4 py-12"
+      className="flex min-h-screen items-center justify-center bg-[color:var(--samba-elevated)] px-4 py-12"
       aria-busy="true"
       aria-label="Checking invite"
     >

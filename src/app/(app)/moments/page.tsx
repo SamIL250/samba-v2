@@ -141,7 +141,7 @@ export default function MomentsPage() {
               <div className="absolute right-2 top-2 z-10">
                 <button
                   type="button"
-                  className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-[color:var(--samba-ink)] shadow-sm transition ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--samba-elevated)] text-[color:var(--samba-ink)] shadow-sm transition ${
                     menuOpen
                       ? "opacity-100"
                       : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
@@ -158,7 +158,7 @@ export default function MomentsPage() {
 
                 {menuOpen ? (
                   <div
-                    className="absolute right-0 top-10 min-w-[10.5rem] overflow-hidden rounded-xl border border-[color:var(--samba-border)] bg-white py-1 text-sm shadow-sm"
+                    className="absolute right-0 top-10 min-w-[10.5rem] overflow-hidden rounded-xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] py-1 text-sm shadow-sm"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--samba-muted)]">
@@ -214,7 +214,7 @@ export default function MomentsPage() {
 
         <Link
           href="/moments/instant"
-          className="col-span-1 row-span-1 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[color:var(--samba-border-strong)] bg-white/50 text-[color:var(--samba-muted)] transition hover:border-[color:var(--samba-accent)] hover:text-[color:var(--samba-ink)]"
+          className="col-span-1 row-span-1 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[color:var(--samba-border-strong)] bg-[color:var(--samba-surface)] text-[color:var(--samba-muted)] transition hover:border-[color:var(--samba-accent)] hover:text-[color:var(--samba-ink)]"
         >
           <Camera01 className="size-6" strokeWidth={1.75} />
           <span className="text-xs font-semibold">Instant</span>

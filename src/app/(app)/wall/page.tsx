@@ -119,7 +119,7 @@ function WallPostCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-[1.35rem] border border-[color:var(--samba-border)] bg-white shadow-[0_1px_0_rgba(26,23,20,0.03)]">
+    <article className="overflow-hidden rounded-[1.35rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] shadow-[0_1px_0_rgba(26,23,20,0.03)]">
       <header className="flex items-center gap-3 px-4 py-3">
         <div
           className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-[color:var(--samba-bubble-out-text)]"
@@ -390,7 +390,7 @@ export default function WallPage() {
         <div className="flex items-start gap-3 px-1">
           <Link
             href="/more"
-            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white/70 md:hidden"
+            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)] md:hidden"
             aria-label="Back to more"
           >
             <ArrowLeft className="size-5" strokeWidth={2} />

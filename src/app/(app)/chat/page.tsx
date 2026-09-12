@@ -87,7 +87,7 @@ export default function MessagesHubPage() {
       {inbox.conversationId && inbox.partner ? (
         <Link
           href="/chat/thread"
-          className="flex items-center gap-3 rounded-[1.35rem] border border-[color:var(--samba-border)] bg-white px-4 py-3.5 transition hover:border-[color:var(--samba-accent)]"
+          className="flex items-center gap-3 rounded-[1.35rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-4 py-3.5 transition hover:border-[color:var(--samba-accent)]"
         >
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
@@ -125,12 +125,12 @@ export default function MessagesHubPage() {
           />
         </Link>
       ) : (
-        <div className="rounded-[1.35rem] border border-dashed border-[color:var(--samba-border)] bg-white/60 px-4 py-6 text-center text-sm text-[color:var(--samba-muted)]">
+        <div className="rounded-[1.35rem] border border-dashed border-[color:var(--samba-border)] bg-[color:var(--samba-surface)] px-4 py-6 text-center text-sm text-[color:var(--samba-muted)]">
           Invite your person — then your private chat appears here.
         </div>
       )}
 
-      <section className="rounded-[1.5rem] border border-[color:var(--samba-border)] bg-white px-4 py-5">
+      <section className="rounded-[1.5rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-4 py-5">
         <div className="mb-4">
           <h2 className="font-[family-name:var(--font-display)] text-lg font-bold tracking-tight">
             Soft signals
@@ -182,7 +182,7 @@ export default function MessagesHubPage() {
           From {firstName}
         </h2>
         {inbox.received.length === 0 ? (
-          <p className="rounded-[1.25rem] bg-white/70 px-4 py-5 text-center text-sm text-[color:var(--samba-muted)]">
+          <p className="rounded-[1.25rem] bg-[color:var(--samba-surface)] px-4 py-5 text-center text-sm text-[color:var(--samba-muted)]">
             Nothing yet — when {firstName} sends a soft signal, it lands here
             for you.
           </p>
@@ -198,7 +198,7 @@ export default function MessagesHubPage() {
                   className={`flex items-center gap-3 rounded-[1.15rem] border px-3.5 py-3 ${
                     fresh
                       ? "border-[color:var(--samba-accent)] bg-[color:var(--samba-accent)]/12"
-                      : "border-[color:var(--samba-border)] bg-white"
+                      : "border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)]"
                   }`}
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[color:var(--samba-surface)]">

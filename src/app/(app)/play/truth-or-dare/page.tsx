@@ -216,7 +216,7 @@ export default function TruthOrDarePage() {
           Saved plays
         </h2>
         {saved.length === 0 ? (
-          <p className="rounded-[1.25rem] bg-white/70 px-4 py-5 text-center text-sm text-[color:var(--samba-muted)]">
+          <p className="rounded-[1.25rem] bg-[color:var(--samba-surface)] px-4 py-5 text-center text-sm text-[color:var(--samba-muted)]">
             No plays yet — nudge them to start.
           </p>
         ) : (
@@ -224,7 +224,7 @@ export default function TruthOrDarePage() {
             {saved.map((play) => (
               <li
                 key={play._id}
-                className="rounded-[1.15rem] border border-[color:var(--samba-border)] bg-white px-4 py-3"
+                className="rounded-[1.15rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-4 py-3"
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--samba-accent)]">

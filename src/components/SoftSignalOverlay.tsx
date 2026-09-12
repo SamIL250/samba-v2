@@ -71,9 +71,13 @@ export function SoftSignalOverlay() {
       aria-live="polite"
     >
       <div
-        className={`samba-signal-card flex max-w-sm flex-col items-center rounded-[2rem] border border-[color:var(--samba-border)] bg-white/95 px-8 py-9 text-center backdrop-blur-md ${
+        className={`samba-signal-card flex max-w-sm flex-col items-center rounded-[2rem] border border-[color:var(--samba-border)] px-8 py-9 text-center backdrop-blur-md ${
           visible ? "samba-signal-card-in" : "samba-signal-card-out"
         }`}
+        style={{
+          background:
+            "color-mix(in srgb, var(--samba-elevated) 96%, transparent)",
+        }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

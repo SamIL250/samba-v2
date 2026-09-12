@@ -84,7 +84,7 @@ export default function InstantMomentPage() {
       <div className="flex items-start gap-3">
         <Link
           href="/moments"
-          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white/70"
+          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)]"
           aria-label="Back to moments"
         >
           <ArrowLeft className="size-5" strokeWidth={2} />
@@ -122,7 +122,7 @@ export default function InstantMomentPage() {
             )}
             {busy ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black/35">
-                <p className="rounded-full bg-white/95 px-4 py-2 text-sm font-semibold">
+                <p className="rounded-full bg-[color:var(--samba-elevated)] px-4 py-2 text-sm font-semibold">
                   Saving…
                 </p>
               </div>
@@ -148,7 +148,7 @@ export default function InstantMomentPage() {
             type="button"
             disabled={busy || !couple}
             onClick={() => cameraRef.current?.click()}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-white px-2 py-4 text-xs font-semibold transition hover:border-[color:var(--samba-accent)] disabled:opacity-55"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-2 py-4 text-xs font-semibold transition hover:border-[color:var(--samba-accent)] disabled:opacity-55"
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--samba-surface)]">
               <Camera01 className="size-5" strokeWidth={1.75} />
@@ -159,7 +159,7 @@ export default function InstantMomentPage() {
             type="button"
             disabled={busy || !couple}
             onClick={() => galleryRef.current?.click()}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-white px-2 py-4 text-xs font-semibold transition hover:border-[color:var(--samba-accent)] disabled:opacity-55"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-2 py-4 text-xs font-semibold transition hover:border-[color:var(--samba-accent)] disabled:opacity-55"
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--samba-surface)]">
               <Image01 className="size-5" strokeWidth={1.75} />
@@ -170,7 +170,7 @@ export default function InstantMomentPage() {
             type="button"
             disabled={busy || !couple}
             onClick={() => videoRef.current?.click()}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-white px-2 py-4 text-xs font-semibold transition hover:border-[color:var(--samba-accent)] disabled:opacity-55"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] px-2 py-4 text-xs font-semibold transition hover:border-[color:var(--samba-accent)] disabled:opacity-55"
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--samba-surface)]">
               <VideoRecorder className="size-5" strokeWidth={1.75} />

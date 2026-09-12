@@ -46,8 +46,12 @@ export function AppBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--samba-border)] bg-white/95 backdrop-blur-md md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--samba-border)] backdrop-blur-md md:hidden"
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom)",
+        background:
+          "color-mix(in srgb, var(--samba-elevated) 94%, transparent)",
+      }}
       aria-label="Primary"
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-between px-2 pt-2 pb-2">

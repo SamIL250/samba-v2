@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { XClose } from "@untitledui/icons";
 import { SambaMark } from "@/components/SambaLogo";
+import {
+  isAndroidChrome,
+  isIosSafari,
+  isStandaloneDisplay,
+  type BeforeInstallPromptEvent,
+} from "@/lib/pwaInstall";
 
 const STORAGE_KEY = "samba-install-dismissed-at";
 const BROWSER_HINT_KEY = "samba-browser-chrome-hint-at";
 const DISMISS_MS = 1000 * 60 * 60 * 24 * 14; // 14 days
 const HINT_DISMISS_MS = 1000 * 60 * 60 * 24 * 3; // 3 days
 const INSTALL_TIMEOUT_MS = 90_000;
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
 
 type Phase =
   | "idle"
@@ -22,35 +24,6 @@ type Phase =
   | "done"
   | "dismissed"
   | "failed";
-
-function isStandaloneDisplay() {
-  if (typeof window === "undefined") return true;
-  const mq = window.matchMedia("(display-mode: standalone)").matches;
-  const fullscreen = window.matchMedia("(display-mode: fullscreen)").matches;
-  const iosStandalone =
-    "standalone" in navigator &&
-    Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-  return mq || fullscreen || iosStandalone;
-}
-
-function isAndroidChrome() {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  return (
-    /Android/i.test(ua) && /Chrome/i.test(ua) && !/EdgA|OPR|SamsungBrowser/i.test(ua)
-  );
-}
-
-function isIosSafari() {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  const iOS =
-    /iPad|iPhone|iPod/.test(ua) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const webkit = /WebKit/.test(ua);
-  const notChrome = !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return iOS && webkit && notChrome;
-}
 
 function wasDismissedRecently(key: string, ms: number) {
   try {
@@ -94,10 +67,14 @@ function phaseLabel(phase: Phase, percent: number) {
 }
 
 /**
- * Helps users get a real standalone install (no Chrome URL / close bar).
- * Browsers don’t expose a true install %, so we show an estimated bar while Chrome works.
+ * Soft bottom prompt for signed-in app surfaces (Android).
+ * Landing page uses the always-visible Download button instead — iPhone friends
+ * often never notice this banner.
  */
 export function InstallPrompt() {
+  const pathname = usePathname();
+  const onMarketing = pathname === "/";
+
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<"install" | "ios" | "reinstall">("install");
@@ -129,7 +106,6 @@ export function InstallPrompt() {
     progressTimer.current = window.setInterval(() => {
       setPercent((prev) => {
         if (prev >= 92) return prev;
-        // Ease toward ~90% while Chrome builds the WebAPK (can take a while).
         const step = prev < 40 ? 4 : prev < 70 ? 2 : 1;
         return Math.min(92, prev + step);
       });
@@ -158,6 +134,8 @@ export function InstallPrompt() {
   }
 
   useEffect(() => {
+    // Landing has an explicit Download button — don’t cover the hero with a banner.
+    if (onMarketing) return;
     if (isStandaloneDisplay()) return;
 
     const onBeforeInstall = (e: Event) => {
@@ -186,7 +164,6 @@ export function InstallPrompt() {
         return;
       }
 
-      // No Chrome install event yet — show how to install / replace a bad shortcut.
       if (
         isAndroidChrome() &&
         !hasPromptRef.current &&
@@ -203,9 +180,8 @@ export function InstallPrompt() {
       window.removeEventListener("appinstalled", onInstalled);
       clearTimers();
     };
-    // finishInstalled uses stable setters; listeners should only bind once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onMarketing]);
 
   useEffect(() => {
     if (!ready) return;
@@ -232,12 +208,11 @@ export function InstallPrompt() {
     installedRef.current = false;
 
     try {
-      // Install criteria need an active worker; wait briefly so Chrome can package.
       if ("serviceWorker" in navigator) {
         try {
           await navigator.serviceWorker.ready;
         } catch {
-          // continue — Chrome may still install
+          // continue
         }
       }
 
@@ -254,7 +229,6 @@ export function InstallPrompt() {
 
       setPhase("installing");
       startEstimatedProgress();
-      // appinstalled usually fires; if already standalone, finish immediately.
       if (isStandaloneDisplay()) {
         finishInstalled();
       }
@@ -269,7 +243,7 @@ export function InstallPrompt() {
     }
   }
 
-  if (!ready) return null;
+  if (onMarketing || !ready) return null;
 
   const showProgress =
     phase === "prompting" || phase === "installing" || phase === "done";
@@ -325,9 +299,7 @@ export function InstallPrompt() {
               >
                 <div
                   className={`h-full rounded-full bg-[color:var(--samba-accent)] transition-[width] duration-500 ease-out ${
-                    phase === "prompting"
-                      ? "samba-install-pulse w-[18%]"
-                      : ""
+                    phase === "prompting" ? "samba-install-pulse w-[18%]" : ""
                   }`}
                   style={
                     phase === "prompting" ? undefined : { width: `${percent}%` }
@@ -385,9 +357,8 @@ export function InstallPrompt() {
           ) : mode === "ios" ? (
             <div className="mt-4 space-y-3">
               <p className="text-sm leading-relaxed text-[color:var(--samba-ink)]/80">
-                Install SAMBA on your Home Screen: tap{" "}
-                <span className="font-semibold">Share</span>, then{" "}
-                <span className="font-semibold">Add to Home Screen</span>.
+                On iPhone, use the <span className="font-semibold">Download app</span>{" "}
+                button on the home page — or Safari Share → Add to Home Screen.
               </p>
               <button
                 type="button"

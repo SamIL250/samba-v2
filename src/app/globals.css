@@ -13,9 +13,11 @@
   --samba-bubble-out: #1a1714;
   --samba-bubble-out-text: #fffdf7;
   --samba-chat-chrome: #ffffff;
+  --samba-elevated: #ffffff;
   --samba-gradient: linear-gradient(160deg, #fffdf7 0%, #faf6ee 45%, #f3efe6 100%);
   --background: #faf9f6;
   --foreground: #1a1714;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -84,8 +86,9 @@ h3,
 
 .samba-panel {
   border: 1px solid var(--samba-border);
-  background: #ffffff;
+  background: var(--samba-elevated, #ffffff);
   border-radius: 1.75rem;
+  color: var(--samba-ink);
 }
 
 .samba-btn {
@@ -122,7 +125,7 @@ h3,
   padding: 0.7rem 1.35rem;
   font-weight: 600;
   color: var(--samba-ink);
-  background: #ffffff;
+  background: var(--samba-elevated, #ffffff);
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
@@ -135,11 +138,12 @@ h3,
   width: 100%;
   border-radius: 1rem;
   border: 1px solid var(--samba-border);
-  background: #ffffff;
+  background: var(--samba-elevated, #ffffff);
   padding: 0.85rem 1rem;
   color: var(--samba-ink);
   outline: none;
   transition: border-color 0.15s ease;
+  color-scheme: inherit;
 }
 
 .samba-input:focus {

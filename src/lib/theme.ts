@@ -14,6 +14,7 @@ export const THEMES = {
     bubbleOut: "#1A1714",
     bubbleOutText: "#FFFDF7",
     chatChrome: "#FFFFFF",
+    elevated: "#FFFFFF",
     gradient: "linear-gradient(160deg, #FFFDF7 0%, #FAF6EE 45%, #F3EFE6 100%)",
   },
   sunset: {
@@ -31,6 +32,7 @@ export const THEMES = {
     bubbleOut: "#8B4518",
     bubbleOutText: "#FFF8F0",
     chatChrome: "#FFF9F3",
+    elevated: "#FFFCF8",
     gradient: "linear-gradient(160deg, #FFF9F2 0%, #F8E8D4 50%, #F0D8B8 100%)",
   },
   forest: {
@@ -48,6 +50,7 @@ export const THEMES = {
     bubbleOut: "#5C3D38",
     bubbleOutText: "#FFF8F6",
     chatChrome: "#FFFCFB",
+    elevated: "#FFFEFE",
     gradient: "linear-gradient(160deg, #FFFCFA 0%, #F7ECE8 50%, #EFE0DA 100%)",
   },
   midnight: {
@@ -65,14 +68,106 @@ export const THEMES = {
     bubbleOut: "#2C3228",
     bubbleOutText: "#F7F6F2",
     chatChrome: "#F7F6F2",
+    elevated: "#FBFAF7",
     gradient: "linear-gradient(160deg, #F9F8F5 0%, #EEEEE8 50%, #E2E2DA 100%)",
   },
 } as const;
 
 export type ThemeKey = keyof typeof THEMES;
+export type ColorMode = "light" | "dark";
 
-export function themeCssVars(theme: ThemeKey): Record<string, string> {
-  const t = THEMES[theme];
+/** Dark shells keep each accent family, but invert surface / ink. */
+const DARK_BY_THEME: Record<
+  ThemeKey,
+  Pick<
+    (typeof THEMES)[ThemeKey],
+    | "accent"
+    | "accentSoft"
+    | "glow"
+    | "surface"
+    | "ink"
+    | "muted"
+    | "border"
+    | "bubbleIn"
+    | "bubbleOut"
+    | "bubbleOutText"
+    | "chatChrome"
+    | "elevated"
+    | "gradient"
+  >
+> = {
+  ocean: {
+    accent: "#E8C04A",
+    accentSoft: "#C9A030",
+    glow: "#5A4A20",
+    surface: "#1C1916",
+    ink: "#F4F0E8",
+    muted: "#A39E96",
+    border: "#3A3530",
+    bubbleIn: "#2A2622",
+    bubbleOut: "#E8C04A",
+    bubbleOutText: "#1A1714",
+    chatChrome: "#141210",
+    elevated: "#221E1A",
+    gradient: "linear-gradient(160deg, #141210 0%, #1C1916 48%, #241F1A 100%)",
+  },
+  sunset: {
+    accent: "#E09A3A",
+    accentSoft: "#C47A1A",
+    glow: "#5A3A18",
+    surface: "#1F1610",
+    ink: "#F8EEE4",
+    muted: "#B09880",
+    border: "#3F3228",
+    bubbleIn: "#2E241C",
+    bubbleOut: "#E09A3A",
+    bubbleOutText: "#1A120C",
+    chatChrome: "#16110C",
+    elevated: "#261C14",
+    gradient: "linear-gradient(160deg, #16110C 0%, #1F1610 50%, #2A1C12 100%)",
+  },
+  forest: {
+    accent: "#D9A89C",
+    accentSoft: "#C4897A",
+    glow: "#5A3C36",
+    surface: "#1F1716",
+    ink: "#F7EEEB",
+    muted: "#B09A96",
+    border: "#3F322F",
+    bubbleIn: "#2E2422",
+    bubbleOut: "#D9A89C",
+    bubbleOutText: "#1A1210",
+    chatChrome: "#161110",
+    elevated: "#261C1A",
+    gradient: "linear-gradient(160deg, #161110 0%, #1F1716 50%, #2A1C1A 100%)",
+  },
+  midnight: {
+    accent: "#A8AD8E",
+    accentSoft: "#8A8F6E",
+    glow: "#3A3E30",
+    surface: "#181A16",
+    ink: "#F0F1EC",
+    muted: "#9A9E94",
+    border: "#33362E",
+    bubbleIn: "#252822",
+    bubbleOut: "#A8AD8E",
+    bubbleOutText: "#141610",
+    chatChrome: "#12140F",
+    elevated: "#1E211C",
+    gradient: "linear-gradient(160deg, #12140F 0%, #181A16 50%, #22251E 100%)",
+  },
+};
+
+export function isColorMode(value: unknown): value is ColorMode {
+  return value === "light" || value === "dark";
+}
+
+export function themeCssVars(
+  theme: ThemeKey,
+  colorMode: ColorMode = "light",
+): Record<string, string> {
+  const light = THEMES[theme];
+  const t = colorMode === "dark" ? DARK_BY_THEME[theme] : light;
   return {
     "--samba-accent": t.accent,
     "--samba-accent-soft": t.accentSoft,
@@ -87,6 +182,10 @@ export function themeCssVars(theme: ThemeKey): Record<string, string> {
     "--samba-bubble-out": t.bubbleOut,
     "--samba-bubble-out-text": t.bubbleOutText,
     "--samba-chat-chrome": t.chatChrome,
+    "--samba-elevated": t.elevated,
+    "--background": t.surface,
+    "--foreground": t.ink,
+    colorScheme: colorMode,
   };
 }
 

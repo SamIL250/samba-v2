@@ -511,7 +511,7 @@ export default function ChatThreadPage() {
 
   if (!conversation) {
     return (
-      <div className="bg-white px-4 py-8">
+      <div className="bg-[color:var(--samba-elevated)] px-4 py-8">
         <Link
           href="/chat"
           className="mb-6 inline-flex items-center gap-2 text-sm text-[color:var(--samba-muted)]"
@@ -582,7 +582,7 @@ export default function ChatThreadPage() {
           {appearOpen ? (
             <div
               ref={appearPanelRef}
-              className="absolute right-0 top-12 z-40 w-[min(18.5rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[color:var(--samba-border)] bg-white p-3 shadow-sm"
+              className="absolute right-0 top-12 z-40 w-[min(18.5rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] p-3 shadow-sm"
               onClick={(e) => e.stopPropagation()}
             >
               <p className="px-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--samba-muted)]">
@@ -755,7 +755,7 @@ export default function ChatThreadPage() {
                     <button
                       type="button"
                       data-message-menu-trigger={message._id}
-                      className={`absolute top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm transition ${
+                      className={`absolute top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[color:var(--samba-elevated)] shadow-sm transition ${
                         mine ? "-left-9" : "-right-9"
                       } ${
                         menuOpen
@@ -775,7 +775,7 @@ export default function ChatThreadPage() {
                     {menuOpen ? (
                       <div
                         data-message-menu={message._id}
-                        className={`absolute z-20 min-w-[11rem] overflow-hidden rounded-xl border border-[color:var(--samba-border)] bg-white py-1 text-sm shadow-sm ${
+                        className={`absolute z-20 min-w-[11rem] overflow-hidden rounded-xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] py-1 text-sm shadow-sm ${
                           mine ? "right-0 top-9" : "left-0 top-9"
                         }`}
                         onClick={(e) => e.stopPropagation()}
@@ -829,7 +829,7 @@ export default function ChatThreadPage() {
                           type="button"
                           className={`mb-2 w-full rounded-lg border-l-2 px-2 py-1.5 text-left text-xs transition hover:brightness-95 ${
                             mine
-                              ? "border-[color:var(--samba-accent)] bg-white/10"
+                              ? "border-[color:var(--samba-accent)] bg-[color:var(--samba-ink)]/10"
                               : "border-[color:var(--samba-accent)] bg-black/5"
                           }`}
                           onClick={() => scrollToMessage(message.replyTo!._id)}
@@ -993,7 +993,7 @@ export default function ChatThreadPage() {
               </div>
               <button
                 type="button"
-                className="rounded-full p-1 hover:bg-white"
+                className="rounded-full p-1 hover:bg-[color:var(--samba-surface)]"
                 aria-label="Cancel reply"
                 onClick={() => setReplyTo(null)}
               >
@@ -1003,7 +1003,7 @@ export default function ChatThreadPage() {
           ) : null}
 
           {attachOpen ? (
-            <div className="samba-attach-toolbar absolute bottom-full left-2.5 mb-2 flex gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-white p-2 sm:left-4">
+            <div className="samba-attach-toolbar absolute bottom-full left-2.5 mb-2 flex gap-2 rounded-2xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] p-2 sm:left-4">
               <button
                 type="button"
                 disabled={uploading}
@@ -1091,7 +1091,7 @@ export default function ChatThreadPage() {
             <form onSubmit={onSend} className="relative flex items-end gap-2">
               <button
                 type="button"
-                className="relative mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
+                className="relative mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
                 aria-label={attachOpen ? "Close attach menu" : "Attach"}
                 aria-expanded={attachOpen}
                 disabled={uploading}
@@ -1116,7 +1116,7 @@ export default function ChatThreadPage() {
                 {emojiOpen ? (
                   <div
                     ref={emojiPanelRef}
-                    className="absolute bottom-full left-0 z-30 mb-2 rounded-2xl border border-[color:var(--samba-border)] bg-white shadow-sm"
+                    className="absolute bottom-full left-0 z-30 mb-2 rounded-2xl border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] shadow-sm"
                   >
                     <EmojiPicker
                       theme={EmojiTheme.LIGHT}
@@ -1176,7 +1176,7 @@ export default function ChatThreadPage() {
               ) : (
                 <button
                   type="button"
-                  className="mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
+                  className="mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] transition hover:bg-[color:var(--samba-surface)] disabled:opacity-55"
                   aria-label="Record voice note"
                   disabled={uploading}
                   onClick={() => void startRecording()}

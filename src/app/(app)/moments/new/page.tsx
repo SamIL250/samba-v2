@@ -116,7 +116,7 @@ export default function NewMomentPage() {
       <div className="flex items-start gap-3">
         <Link
           href="/moments"
-          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white/70"
+          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)]"
           aria-label="Back to moments"
         >
           <ArrowLeft className="size-5" strokeWidth={2} />

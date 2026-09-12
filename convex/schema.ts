@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
   chatBackgroundValidator,
+  colorModeValidator,
   moodGenderValidator,
   moodValidator,
   partnerMoodValidator,
@@ -29,6 +30,8 @@ export default defineSchema({
     /** When the couple started dating — drives Day N + annual anniversary */
     datingStartedAt: v.optional(v.number()),
     theme: themeValidator,
+    /** Light / dark shell — optional for older couples (defaults to light). */
+    colorMode: v.optional(colorModeValidator),
     chatBackground: v.optional(chatBackgroundValidator),
     status: v.union(v.literal("pending_partner"), v.literal("active")),
     createdAt: v.number(),

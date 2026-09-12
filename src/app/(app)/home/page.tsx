@@ -231,7 +231,7 @@ export default function HomePage() {
           {myMoodSrc ? (
             <button
               type="button"
-              className="flex h-16 w-12 items-center justify-center overflow-hidden rounded-[999px] border border-[color:var(--samba-border)] bg-white shadow-sm transition hover:border-[color:var(--samba-accent)] sm:h-[4.5rem] sm:w-14"
+              className="flex h-16 w-12 items-center justify-center overflow-hidden rounded-[999px] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] shadow-sm transition hover:border-[color:var(--samba-accent)] sm:h-[4.5rem] sm:w-14"
               aria-label="Update your mood"
               onClick={openMoodPicker}
             >
@@ -245,7 +245,7 @@ export default function HomePage() {
           ) : (
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-white text-[color:var(--samba-ink)] shadow-sm transition hover:border-[color:var(--samba-accent)]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] text-[color:var(--samba-ink)] shadow-sm transition hover:border-[color:var(--samba-accent)]"
               aria-label="Update your mood"
               onClick={openMoodPicker}
             >
@@ -379,7 +379,7 @@ export default function HomePage() {
               onClick={() => setMoodOpen(false)}
             >
               <div
-                className="mb-8 w-full max-w-lg rounded-[1.5rem] border border-[color:var(--samba-border)] bg-white p-5 shadow-sm"
+                className="mb-8 w-full max-w-lg rounded-[1.5rem] border border-[color:var(--samba-border)] bg-[color:var(--samba-elevated)] p-5 shadow-sm"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
@@ -414,7 +414,7 @@ export default function HomePage() {
                       aria-selected={moodTab === tab}
                       className={`rounded-full px-3 py-2 text-sm font-semibold capitalize transition ${
                         moodTab === tab
-                          ? "bg-white text-[color:var(--samba-ink)] shadow-sm"
+                          ? "bg-[color:var(--samba-elevated)] text-[color:var(--samba-ink)] shadow-sm"
                           : "text-[color:var(--samba-muted)] hover:text-[color:var(--samba-ink)]"
                       }`}
                       onClick={() => setMoodTab(tab)}

@@ -11,7 +11,7 @@ import {
   isChatBackgroundKey,
   type ChatBackgroundKey,
 } from "@/lib/chatBackgrounds";
-import { THEMES, type ThemeKey } from "@/lib/theme";
+import { THEMES, isColorMode, type ColorMode, type ThemeKey } from "@/lib/theme";
 import { CoupleSkeleton } from "@/components/skeletons";
 import { PushSettingsCard } from "@/components/PushSettingsCard";
 
@@ -42,6 +42,7 @@ export default function CoupleProfilePage() {
   const [datingStarted, setDatingStarted] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [theme, setTheme] = useState<ThemeKey>("ocean");
+  const [colorMode, setColorMode] = useState<ColorMode>("light");
   const [chatBackground, setChatBackground] =
     useState<ChatBackgroundKey>("none");
   const [busy, setBusy] = useState(false);
@@ -67,6 +68,9 @@ export default function CoupleProfilePage() {
     );
     setBirthDate(toDateInput(couple.membership.birthDateAt));
     setTheme((couple.couple.theme ?? "ocean") as ThemeKey);
+    setColorMode(
+      isColorMode(couple.couple.colorMode) ? couple.couple.colorMode : "light",
+    );
     const bg = couple.couple.chatBackground ?? "none";
     setChatBackground(isChatBackgroundKey(bg) ? bg : "none");
   }, [couple, me]);
@@ -82,6 +86,7 @@ export default function CoupleProfilePage() {
         displayName,
         partnerLabel,
         theme,
+        colorMode,
         chatBackground,
         datingStartedAt: parseDateInput(datingStarted),
         birthDateAt: parseDateInput(birthDate),
@@ -116,7 +121,7 @@ export default function CoupleProfilePage() {
       <div className="flex items-start gap-3 md:hidden">
         <Link
           href="/more"
-          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-white/70"
+          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition hover:bg-[color:var(--samba-surface)]"
           aria-label="Back to more"
         >
           <ArrowLeft className="size-5" strokeWidth={2} />
@@ -230,6 +235,51 @@ export default function CoupleProfilePage() {
             ) : null}
           </div>
         )}
+
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Appearance</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                { key: "light", label: "Light", blurb: "Bright & airy" },
+                { key: "dark", label: "Dark", blurb: "Soft night" },
+              ] as const
+            ).map(({ key, label, blurb }) => {
+              const selected = colorMode === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setColorMode(key)}
+                  className={`rounded-xl border-2 px-3 py-3 text-left transition ${
+                    selected
+                      ? "border-[color:var(--samba-accent)]"
+                      : "border-[color:var(--samba-border)]"
+                  }`}
+                  style={{
+                    background:
+                      key === "dark"
+                        ? "linear-gradient(160deg, #141210 0%, #1C1916 100%)"
+                        : "linear-gradient(160deg, #FFFDF7 0%, #FAF6EE 100%)",
+                    color: key === "dark" ? "#F4F0E8" : "#1A1714",
+                  }}
+                >
+                  <span className="block text-sm font-semibold">{label}</span>
+                  <span
+                    className="mt-0.5 block text-[11px]"
+                    style={{ opacity: 0.72 }}
+                  >
+                    {blurb}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-[color:var(--samba-muted)]">
+            Shared with your person — both of you see the same light or dark
+            shell.
+          </p>
+        </fieldset>
 
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium">Theme</legend>

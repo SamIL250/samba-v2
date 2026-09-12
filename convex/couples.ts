@@ -8,6 +8,7 @@ import {
 import { generateInviteCode, PARTNER_COLORS, slugify } from "./lib/codes";
 import {
   chatBackgroundValidator,
+  colorModeValidator,
   moodGenderValidator,
   partnerMoodValidator,
   themeValidator,
@@ -45,6 +46,7 @@ export const create = mutation({
       createdBy: user._id,
       anniversaryAt: args.anniversaryAt,
       theme: args.theme,
+      colorMode: "light",
       status: "pending_partner",
       createdAt: now,
     });
@@ -292,6 +294,7 @@ export const updateProfile = mutation({
     anniversaryAt: v.optional(v.number()),
     datingStartedAt: v.optional(v.number()),
     theme: v.optional(themeValidator),
+    colorMode: v.optional(colorModeValidator),
     chatBackground: v.optional(chatBackgroundValidator),
     partnerLabel: v.optional(v.string()),
     displayName: v.optional(v.string()),
@@ -312,6 +315,7 @@ export const updateProfile = mutation({
       patch.anniversaryAt = args.datingStartedAt;
     }
     if (args.theme !== undefined) patch.theme = args.theme;
+    if (args.colorMode !== undefined) patch.colorMode = args.colorMode;
     if (args.chatBackground !== undefined) {
       patch.chatBackground = args.chatBackground;
     }
