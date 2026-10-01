@@ -21,6 +21,7 @@ import type * as presence from "../presence.js";
 import type * as push from "../push.js";
 import type * as pushActions from "../pushActions.js";
 import type * as signals from "../signals.js";
+import type * as stickers from "../stickers.js";
 import type * as tod from "../tod.js";
 import type * as users from "../users.js";
 import type * as wall from "../wall.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   push: typeof push;
   pushActions: typeof pushActions;
   signals: typeof signals;
+  stickers: typeof stickers;
   tod: typeof tod;
   users: typeof users;
   wall: typeof wall;

@@ -14,6 +14,7 @@ type Ctx = QueryCtx | MutationCtx;
 function previewSnippet(message: Doc<"messages">): string {
   if (message.deletedForEveryoneAt) return "Deleted message";
   if (message.type === "image") return "Photo";
+  if (message.type === "sticker") return "Sticker";
   if (message.type === "audio") return "Voice note";
   if (message.type === "file") return "File";
   if (message.type === "game_share") return message.body ?? "Game share";

@@ -64,7 +64,9 @@ export const inbox = query({
           const previewBody =
             latest.type === "image"
               ? "Sent a photo"
-              : latest.type === "audio"
+              : latest.type === "sticker"
+                ? "Sent a sticker"
+                : latest.type === "audio"
                 ? "Sent a voice note"
                 : latest.type === "file"
                   ? "Sent a file"

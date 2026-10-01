@@ -86,6 +86,7 @@ export default defineSchema({
       v.literal("image"),
       v.literal("audio"),
       v.literal("file"),
+      v.literal("sticker"),
       v.literal("system"),
       v.literal("game_share"),
     ),
@@ -117,6 +118,18 @@ export default defineSchema({
   })
     .index("by_couple", ["coupleId"])
     .index("by_publicId", ["cloudinaryPublicId"]),
+
+  /** Couple sticker pack — images imported from a partner's gallery. */
+  stickers: defineTable({
+    coupleId: v.id("couples"),
+    createdBy: v.id("users"),
+    /** Points at the (re-sized) sticker asset in mediaAssets. */
+    mediaId: v.id("mediaAssets"),
+    label: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_couple_createdAt", ["coupleId", "createdAt"])
+    .index("by_couple_media", ["coupleId", "mediaId"]),
 
   moments: defineTable({
     coupleId: v.id("couples"),

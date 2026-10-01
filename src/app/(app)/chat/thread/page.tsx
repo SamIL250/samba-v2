@@ -23,12 +23,14 @@ import {
   Palette,
   Plus,
   Send01,
+  StickerSquare,
   Trash01,
   XClose,
 } from "@untitledui/icons";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { api, type Id } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
+import { StickerPicker } from "@/components/StickerPicker";
 import { ChatThreadSkeleton } from "@/components/skeletons";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import {
@@ -97,6 +99,7 @@ export default function ChatThreadPage() {
   const [menuId, setMenuId] = useState<Id<"messages"> | null>(null);
   const [appearOpen, setAppearOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [stickerOpen, setStickerOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{
     url: string;
     name: string;
@@ -116,6 +119,8 @@ export default function ChatThreadPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const emojiPanelRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const stickerPanelRef = useRef<HTMLDivElement>(null);
+  const stickerButtonRef = useRef<HTMLButtonElement>(null);
   const appearPanelRef = useRef<HTMLDivElement>(null);
   const appearButtonRef = useRef<HTMLButtonElement>(null);
   const messageRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -174,6 +179,14 @@ export default function ChatThreadPage() {
       }
 
       if (
+        stickerOpen &&
+        (stickerPanelRef.current?.contains(target) ||
+          stickerButtonRef.current?.contains(target))
+      ) {
+        return;
+      }
+
+      if (
         appearOpen &&
         (appearPanelRef.current?.contains(target) ||
           appearButtonRef.current?.contains(target))
@@ -199,8 +212,9 @@ export default function ChatThreadPage() {
       setMenuId(null);
       setAppearOpen(false);
       if (emojiOpen) setEmojiOpen(false);
+      if (stickerOpen) setStickerOpen(false);
     }
-    if (!menuId && !appearOpen && !emojiOpen) return;
+    if (!menuId && !appearOpen && !emojiOpen && !stickerOpen) return;
     // Defer so the opening click doesn't immediately close the picker
     const id = window.setTimeout(() => {
       document.addEventListener("pointerdown", onDocPointerDown);
@@ -209,7 +223,7 @@ export default function ChatThreadPage() {
       window.clearTimeout(id);
       document.removeEventListener("pointerdown", onDocPointerDown);
     };
-  }, [menuId, appearOpen, emojiOpen]);
+  }, [menuId, appearOpen, emojiOpen, stickerOpen]);
 
   useEffect(() => {
     return () => {
@@ -278,6 +292,7 @@ export default function ChatThreadPage() {
   ): string {
     if (message.deletedForEveryone) return "Deleted message";
     if (message.type === "image") return "Photo";
+    if (message.type === "sticker") return "Sticker";
     if (message.type === "audio") return "Voice note";
     if (message.type === "file") return "File";
     return (message.body ?? "Message").slice(0, 80);
@@ -395,6 +410,7 @@ export default function ChatThreadPage() {
       longPressOrigin.current = null;
       setAppearOpen(false);
       setEmojiOpen(false);
+      setStickerOpen(false);
       setMenuId(messageId);
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(12);
@@ -738,6 +754,12 @@ export default function ChatThreadPage() {
               const accent = message.sender?.color ?? "var(--samba-accent)";
               const time = formatRelative(message.createdAt);
               const menuOpen = menuId === message._id;
+              /** Stickers float free — no bubble, no padding (unless replying to one). */
+              const bareSticker =
+                message.type === "sticker" &&
+                !message.body &&
+                !message.replyTo &&
+                !message.deletedForEveryone;
 
               return (
                 <div
@@ -754,7 +776,7 @@ export default function ChatThreadPage() {
                       : ""
                   }`}
                 >
-                  {!mine ? (
+                  {!mine && !bareSticker ? (
                     <span
                       aria-hidden
                       className="mb-1 h-7 w-1 shrink-0 rounded-full"
@@ -782,6 +804,7 @@ export default function ChatThreadPage() {
                       clearLongPress();
                       setAppearOpen(false);
                       setEmojiOpen(false);
+                      setStickerOpen(false);
                       setMenuId(message._id);
                     }}
                   >
@@ -845,16 +868,20 @@ export default function ChatThreadPage() {
                     ) : null}
 
                     <div
-                      className={`min-w-0 overflow-hidden ${
-                        message.type === "image" &&
-                        !message.body &&
-                        !message.deletedForEveryone
-                          ? "p-1"
-                          : "px-3 py-2"
+                      className={`min-w-0 ${
+                        bareSticker
+                          ? "p-0"
+                          : message.type === "image" &&
+                              !message.body &&
+                              !message.deletedForEveryone
+                            ? "overflow-hidden p-1"
+                            : "overflow-hidden px-3 py-2"
                       } ${
-                        mine
-                          ? "rounded-[1.15rem] rounded-br-md bg-[color:var(--samba-bubble-out)] text-[color:var(--samba-bubble-out-text)]"
-                          : "rounded-[1.15rem] rounded-bl-md bg-[color:var(--samba-bubble-in)] text-[color:var(--samba-ink)]"
+                        bareSticker
+                          ? ""
+                          : mine
+                            ? "rounded-[1.15rem] rounded-br-md bg-[color:var(--samba-bubble-out)] text-[color:var(--samba-bubble-out-text)]"
+                            : "rounded-[1.15rem] rounded-bl-md bg-[color:var(--samba-bubble-in)] text-[color:var(--samba-ink)]"
                       }`}
                     >
                       {message.replyTo ? (
@@ -889,6 +916,43 @@ export default function ChatThreadPage() {
                         </p>
                       ) : (
                         <>
+                          {message.type === "sticker" &&
+                          message.media &&
+                          !message.deletedForEveryone ? (
+                            <div className="group/image relative inline-block">
+                              <button
+                                type="button"
+                                className="block"
+                                onClick={() =>
+                                  setLightbox({
+                                    url: message.media!.secureUrl,
+                                    name: `samba-sticker-${message._id}.png`,
+                                  })
+                                }
+                                aria-label="View sticker"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={message.media.secureUrl}
+                                  alt="Sticker"
+                                  className={`block h-28 w-28 object-contain ${
+                                    message.body ? "mb-1.5" : ""
+                                  }`}
+                                />
+                              </button>
+                              {!message.body ? (
+                                <time
+                                  dateTime={new Date(
+                                    message.createdAt,
+                                  ).toISOString()}
+                                  className="pointer-events-none absolute bottom-0 right-0 rounded-md bg-black/35 px-1.5 py-0.5 text-[10px] leading-none tabular-nums text-white/95"
+                                >
+                                  {time}
+                                </time>
+                              ) : null}
+                            </div>
+                          ) : null}
+
                           {message.type === "image" && message.media ? (
                             <div className="group/image relative">
                               <button
@@ -1180,10 +1244,27 @@ export default function ChatThreadPage() {
                     />
                   </div>
                 ) : null}
+                {stickerOpen && conversation && couple ? (
+                  <div
+                    ref={stickerPanelRef}
+                    className="absolute bottom-full left-0 z-30 mb-2"
+                  >
+                    <StickerPicker
+                      coupleId={couple.couple._id}
+                      conversationId={conversation._id}
+                      replyToId={replyTo?.id}
+                      onSent={() => {
+                        setStickerOpen(false);
+                        setReplyTo(null);
+                      }}
+                      onError={(message) => setError(message)}
+                    />
+                  </div>
+                ) : null}
                 <div className="relative">
                   <textarea
                     ref={inputRef}
-                    className="samba-input samba-composer-input min-h-[2.75rem] w-full resize-none overflow-hidden pr-11"
+                    className="samba-input samba-composer-input min-h-[2.75rem] w-full resize-none overflow-hidden pr-[4.85rem]"
                     rows={1}
                     value={text}
                     onChange={(e) => onTyping(e.target.value)}
@@ -1194,6 +1275,25 @@ export default function ChatThreadPage() {
                     aria-label="Message"
                     disabled={uploading}
                   />
+                  <button
+                    ref={stickerButtonRef}
+                    type="button"
+                    className={`absolute top-1/2 right-11 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full transition ${
+                      stickerOpen
+                        ? "bg-[color:var(--samba-surface)] text-[color:var(--samba-accent)]"
+                        : "text-[color:var(--samba-muted)] hover:bg-[color:var(--samba-surface)] hover:text-[color:var(--samba-ink)]"
+                    }`}
+                    aria-label="Stickers"
+                    aria-expanded={stickerOpen}
+                    disabled={uploading}
+                    onClick={() => {
+                      setAttachOpen(false);
+                      setEmojiOpen(false);
+                      setStickerOpen((o) => !o);
+                    }}
+                  >
+                    <StickerSquare className="size-5" strokeWidth={1.75} />
+                  </button>
                   <button
                     ref={emojiButtonRef}
                     type="button"
@@ -1207,6 +1307,7 @@ export default function ChatThreadPage() {
                     disabled={uploading}
                     onClick={() => {
                       setAttachOpen(false);
+                      setStickerOpen(false);
                       setEmojiOpen((o) => !o);
                     }}
                   >
