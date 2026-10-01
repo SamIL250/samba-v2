@@ -43,12 +43,12 @@ export function PushSettingsCard() {
       const next = await Notification.requestPermission();
       if (next !== "granted") {
         throw new Error(
-          "Permission blocked. Enable notifications for this site in your browser settings, then try again.",
+          "Notifications are blocked. Allow them for this site in your browser settings.",
         );
       }
       // Force a fresh subscription so VAPID key rotations don't leave a dead endpoint.
       await subscribeBrowserPush(publicKey, saveSubscription, { forceNew: true });
-      setMessage("Notifications are on for this device.");
+      setMessage("Notifications are on.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t enable notifications");
     } finally {
@@ -69,7 +69,7 @@ export function PushSettingsCard() {
       } else {
         await removeSubscription({});
       }
-      setMessage("Notifications turned off on this device.");
+      setMessage("Notifications turned off.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t turn off notifications");
     } finally {
@@ -84,7 +84,7 @@ export function PushSettingsCard() {
     try {
       const result = await sendTest({});
       setMessage(
-        `Test sent to ${result.devices} device${result.devices === 1 ? "" : "s"}. Leave SAMBA (home screen / another app), then wait a few seconds.`,
+        `Test sent to ${result.devices} device${result.devices === 1 ? "" : "s"}.`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t send test");
@@ -93,51 +93,62 @@ export function PushSettingsCard() {
     }
   }
 
+  const statusPill = !supported
+    ? { label: "Not supported", tone: "muted" as const }
+    : status?.subscribed
+      ? { label: "On", tone: "on" as const }
+      : permission === "denied"
+        ? { label: "Blocked", tone: "warn" as const }
+        : { label: "Off", tone: "muted" as const };
+
+  const pillTone =
+    statusPill.tone === "on"
+      ? "border-[#8BC48A]/70 bg-[#8BC48A]/20 text-[#2F6B33]"
+      : statusPill.tone === "warn"
+        ? "border-[#E2A36B]/70 bg-[#E2A36B]/25 text-[#8A4B12]"
+        : "border-[color:var(--samba-border)] bg-[color:var(--samba-surface)] text-[color:var(--samba-muted)]";
+
   return (
-    <div className="samba-panel space-y-3 p-5 sm:p-6">
+    <div className="samba-panel p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--samba-accent)]/15">
           <Bell01 className="size-5" strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Push notifications</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold">Push notifications</p>
+            <span
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${pillTone}`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  statusPill.tone === "on"
+                    ? "bg-[#3E8A45]"
+                    : statusPill.tone === "warn"
+                      ? "bg-[#C4741F]"
+                      : "bg-[color:var(--samba-muted)]"
+                }`}
+              />
+              {statusPill.label}
+            </span>
+          </div>
           <p className="mt-1 text-sm text-[color:var(--samba-muted)]">
-            Get alerts for messages, soft signals, moods, and Truth or Dare —
-            even when SAMBA is closed.
-          </p>
-          <p className="mt-2 text-xs text-[color:var(--samba-muted)]">
-            Status:{" "}
-            {!supported
-              ? "not supported here"
-              : status?.subscribed
-                ? "on for this account"
-                : permission === "denied"
-                  ? "blocked in browser"
-                  : permission === "granted"
-                    ? "allowed — finishing setup…"
-                    : "off"}
-          </p>
-          <p className="mt-2 text-xs leading-relaxed text-[color:var(--samba-muted)]">
-            Tip: if you still see a yellow Chrome bar with the site URL, you have a
-            browser shortcut — remove that Home Screen icon, then use Chrome →{" "}
-            <span className="font-semibold">Install app</span>, and open SAMBA from
-            the new icon (standalone, no URL bar).
+            Alerts for messages, signals, and games — even when SAMBA is closed.
           </p>
         </div>
       </div>
 
       {error ? (
-        <p className="text-sm text-[#B45309]" role="alert">
+        <p className="mt-4 text-sm text-[#B45309]" role="alert">
           {error}
         </p>
-      ) : null}
-      {message ? (
-        <p className="text-sm font-semibold text-[color:var(--samba-ink)]/70">
+      ) : message ? (
+        <p className="mt-4 text-sm font-semibold text-[color:var(--samba-ink)]/70">
           {message}
         </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
           className="samba-btn"
@@ -167,12 +178,6 @@ export function PushSettingsCard() {
           </>
         ) : null}
       </div>
-
-      <p className="text-xs leading-relaxed text-[color:var(--samba-muted)]">
-        Tip: the big in-app soft-signal animation only works while SAMBA is open.
-        Background alerts are the system notification shade. On iPhone, install to
-        Home Screen. On Android, don’t force-stop Chrome / SAMBA in app info.
-      </p>
     </div>
   );
 }
